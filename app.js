@@ -9,7 +9,8 @@
   const gameInfo = [
     { id: "cookie", title: "Cookie Baker", desc: "Bake a tiny cookie empire, one click at a time.", tag: "Incremental", art: "cookie-art", emoji: "🍪", label: "FEATURED", page: "cookie", playable: true },
     { id: "dino", title: "Dino Dash", desc: "Jump, dodge, and see how far your little dino can run.", tag: "Endless runner", art: "dino-art", emoji: "🦖", label: "QUICK REFLEXES", page: "dino", playable: true },
-    { id: "bubble", title: "Bubble Pop", desc: "Pop your way to a new personal best in 30 seconds.", tag: "Score attack", art: "bubble-art", emoji: "🫧", label: "30-SECOND GAME", page: "bubble", playable: true }
+    { id: "bubble", title: "Bubble Pop", desc: "Pop your way to a new personal best in 30 seconds.", tag: "Score attack", art: "bubble-art", emoji: "🫧", label: "30-SECOND GAME", page: "bubble", playable: true },
+    { id: "flappy", title: "Flappy Bird", desc: "Flap through the pipes and chase a high score.", tag: "Arcade classic", art: "flappy-art", emoji: "🐤", label: "NEW GAME", page: "flappy", playable: true }
   ];
 
   const buildings = [
@@ -35,7 +36,7 @@
   const defaultState = () => ({
     cookies: 0, clickPower: 1, owned: { oven: 0, baker: 0, mixer: 0, double: 0, conveyor: 0 },
     purchased: { spatula: false, timekeeper: false, bigger: false },
-    favorites: [], bests: { dino: 0, bubble: 0 }, lastSeen: Date.now(), lastSaved: Date.now()
+    favorites: [], bests: { dino: 0, bubble: 0, flappy: 0 }, lastSeen: Date.now(), lastSaved: Date.now()
   });
   let state = defaultState();
   let toastTimer = null;
@@ -106,6 +107,7 @@
     $("#menu-toggle").setAttribute("aria-expanded", "false");
     window.scrollTo({ top: 0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
     if (page === "dino") drawDino();
+    if (page === "flappy") drawFlappy();
     if (page === "cookie") renderCookie();
   }
 
@@ -336,6 +338,105 @@
     resetDino();
   }
 
+  // Flappy Bird: tap or press Space to flap through the pipes.
+  const flappy = { active: false, over: false, score: 0, best: 0, birdY: 185, velocity: 0, pipes: [], frame: 0, last: 0, raf: 0 };
+  const flappyCanvas = $("#flappy-canvas");
+  const flappyCtx = flappyCanvas.getContext("2d");
+  function drawFlappy() {
+    if (!flappyCtx) return;
+    const w = flappyCanvas.width, h = flappyCanvas.height;
+    flappyCtx.clearRect(0, 0, w, h);
+    flappyCtx.fillStyle = "#b9e8ff"; flappyCtx.fillRect(0, 0, w, h);
+    // Soft clouds and distant hills.
+    flappyCtx.fillStyle = "rgba(255,255,255,.78)";
+    [[110,70],[440,105],[650,50]].forEach(([x,y]) => {
+      flappyCtx.beginPath(); flappyCtx.arc(x,y,18,0,Math.PI*2); flappyCtx.arc(x+22,y-8,23,0,Math.PI*2); flappyCtx.arc(x+45,y,17,0,Math.PI*2); flappyCtx.fill();
+    });
+    flappyCtx.fillStyle = "#a4dfb0";
+    flappyCtx.beginPath(); flappyCtx.ellipse(140,390,210,65,0,0,Math.PI*2); flappyCtx.ellipse(540,390,260,70,0,0,Math.PI*2); flappyCtx.fill();
+    // Pipes.
+    flappy.pipes.forEach(p => {
+      const gap = 142, pipeW = 64, bottomY = p.gapY + gap / 2, topBottom = p.gapY - gap / 2;
+      flappyCtx.fillStyle = "#31a85b";
+      flappyCtx.fillRect(p.x, 0, pipeW, topBottom);
+      flappyCtx.fillRect(p.x - 6, topBottom - 18, pipeW + 12, 18);
+      flappyCtx.fillRect(p.x, bottomY, pipeW, h - bottomY - 34);
+      flappyCtx.fillRect(p.x - 6, bottomY, pipeW + 12, 18);
+      flappyCtx.fillStyle = "#70d783";
+      flappyCtx.fillRect(p.x + 8, 0, 7, Math.max(0, topBottom - 18));
+      flappyCtx.fillRect(p.x + 8, bottomY + 18, 7, Math.max(0, h - bottomY - 52));
+    });
+    flappyCtx.fillStyle = "#e9c86d"; flappyCtx.fillRect(0, h - 34, w, 34);
+    flappyCtx.fillStyle = "#6dbd67"; flappyCtx.fillRect(0, h - 34, w, 7);
+    for (let x = 0; x < w; x += 32) { flappyCtx.fillStyle = "#d4aa50"; flappyCtx.fillRect(x, h - 18, 16, 4); }
+    // Little yellow bird.
+    const bx = 180, by = flappy.birdY;
+    flappyCtx.save(); flappyCtx.translate(bx, by); flappyCtx.rotate(Math.max(-0.35, Math.min(0.8, flappy.velocity * 0.045)));
+    flappyCtx.fillStyle = "#ffd34e"; flappyCtx.beginPath(); flappyCtx.ellipse(0,0,20,16,0,0,Math.PI*2); flappyCtx.fill();
+    flappyCtx.fillStyle = "#f4a62a"; flappyCtx.beginPath(); flappyCtx.moveTo(15,-1); flappyCtx.lineTo(31,4); flappyCtx.lineTo(15,9); flappyCtx.closePath(); flappyCtx.fill();
+    flappyCtx.fillStyle = "#fff"; flappyCtx.beginPath(); flappyCtx.arc(7,-7,6,0,Math.PI*2); flappyCtx.fill();
+    flappyCtx.fillStyle = "#253b4a"; flappyCtx.beginPath(); flappyCtx.arc(9,-7,2.5,0,Math.PI*2); flappyCtx.fill();
+    flappyCtx.fillStyle = "#f3a52c"; flappyCtx.beginPath(); flappyCtx.ellipse(-8,7,9,5,-0.3,0,Math.PI*2); flappyCtx.fill();
+    flappyCtx.restore();
+    flappyCtx.fillStyle = "rgba(255,255,255,.88)"; flappyCtx.fillRect(18,16,96,38);
+    flappyCtx.fillStyle = "#294b3c"; flappyCtx.font = "bold 22px system-ui"; flappyCtx.fillText(String(flappy.score), 32, 42);
+    if (!flappy.active && !flappy.over) {
+      flappyCtx.fillStyle = "rgba(255,255,255,.9)"; flappyCtx.fillRect(230,145,300,82);
+      flappyCtx.fillStyle = "#294b3c"; flappyCtx.textAlign = "center"; flappyCtx.font = "bold 23px system-ui"; flappyCtx.fillText("Ready to flap?",380,177);
+      flappyCtx.font = "13px system-ui"; flappyCtx.fillText("Tap or press Space to start",380,202); flappyCtx.textAlign = "left";
+    } else if (flappy.over) {
+      flappyCtx.fillStyle = "rgba(255,255,255,.92)"; flappyCtx.fillRect(220,142,320,94);
+      flappyCtx.fillStyle = "#294b3c"; flappyCtx.textAlign = "center"; flappyCtx.font = "bold 24px system-ui"; flappyCtx.fillText("Bonk! Game over",380,177);
+      flappyCtx.font = "13px system-ui"; flappyCtx.fillText("Tap Play again for another try",380,203); flappyCtx.textAlign = "left";
+    }
+  }
+  function resetFlappy() {
+    cancelAnimationFrame(flappy.raf);
+    flappy.active = false; flappy.over = false; flappy.score = 0; flappy.birdY = 185; flappy.velocity = 0; flappy.pipes = []; flappy.frame = 0; flappy.last = 0;
+    $("#flappy-score").textContent = "0"; $("#flappy-message").textContent = "Tap, click, or press Space to flap.";
+    drawFlappy();
+  }
+  function flapBird() {
+    if (flappy.over) return;
+    if (!flappy.active) { flappy.active = true; flappy.last = performance.now(); flappy.raf = requestAnimationFrame(stepFlappy); $("#flappy-message").textContent = "Keep flapping!"; }
+    flappy.velocity = -5.8;
+  }
+  function endFlappy() {
+    flappy.active = false; flappy.over = true;
+    if (flappy.score > flappy.best) { flappy.best = flappy.score; state.bests.flappy = flappy.best; $("#flappy-best").textContent = flappy.best; saveState(); }
+    $("#flappy-message").textContent = `Game over! You scored ${flappy.score}.`;
+    drawFlappy();
+  }
+  function stepFlappy(now) {
+    if (!flappy.active) return;
+    const dt = Math.min((now - flappy.last) / 16.67, 2.2); flappy.last = now; flappy.frame += dt;
+    flappy.velocity += 0.28 * dt; flappy.birdY += flappy.velocity * dt;
+    if (flappy.frame % 92 < dt) flappy.pipes.push({ x: 790, gapY: 115 + Math.random() * 190, passed: false });
+    flappy.pipes.forEach(p => {
+      p.x -= 3.15 * dt;
+      if (!p.passed && p.x + 64 < 160) { p.passed = true; flappy.score++; $("#flappy-score").textContent = flappy.score; }
+    });
+    flappy.pipes = flappy.pipes.filter(p => p.x > -80);
+    const birdLeft = 160, birdRight = 200, birdTop = flappy.birdY - 13, birdBottom = flappy.birdY + 13;
+    const hitPipe = flappy.pipes.some(p => {
+      const overlapX = birdRight > p.x - 6 && birdLeft < p.x + 70;
+      const gapTop = p.gapY - 71, gapBottom = p.gapY + 71;
+      return overlapX && (birdTop < gapTop || birdBottom > gapBottom);
+    });
+    if (flappy.birdY < 12 || flappy.birdY > 386 || hitPipe) { endFlappy(); return; }
+    drawFlappy(); flappy.raf = requestAnimationFrame(stepFlappy);
+  }
+  function initFlappy() {
+    flappy.best = Number(state.bests.flappy) || 0; $("#flappy-best").textContent = flappy.best;
+    $("#flappy-flap").addEventListener("click", flapBird);
+    $("#flappy-restart").addEventListener("click", resetFlappy);
+    flappyCanvas.addEventListener("pointerdown", flapBird);
+    window.addEventListener("keydown", e => {
+      if (e.code === "Space" && $("#page-flappy").classList.contains("active")) { e.preventDefault(); flapBird(); }
+    });
+    resetFlappy();
+  }
+
   // Bubble Pop: simple 30-second score challenge.
   let bubble = { active: false, score: 0, time: 30, best: Number(state.bests.bubble) || 0, interval: null, spawner: null };
   function spawnBubble() {
@@ -411,6 +512,7 @@
     initCookie();
     initDino();
     initBubble();
+    initFlappy();
     renderAllCards();
     if (location.hash && ["home","games","favorites","about"].includes(location.hash.slice(1))) navigate(location.hash.slice(1));
   }
