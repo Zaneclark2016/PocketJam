@@ -156,6 +156,21 @@
           <div class="game-actions"><button id="flappy-flap" class="button button-dark">Flap! 🐤</button><button id="flappy-restart" class="button button-outline">Play again</button></div>
         </div>
       </section>
+
+      <section id="page-snake" class="page game-page">
+        <div class="game-topline"><button class="back-button" data-page="home">← Back to arcade</button><span class="eyebrow">POCKETJAM ORIGINAL</span></div>
+        <div class="page-heading"><span class="eyebrow">CLASSIC ARCADE</span><h1>Snake 🐍</h1><p>Eat the apples, grow your snake, and don’t run into yourself!</p></div>
+        <div class="snake-game-card">
+          <div class="snake-scoreline"><span>Score <strong id="snake-score">0</strong></span><span>Best <strong id="snake-best">0</strong></span></div>
+          <canvas id="snake-canvas" width="600" height="480" aria-label="Snake game board. Use arrow keys or WASD to move."></canvas>
+          <p id="snake-message" class="game-message">Use arrow keys or WASD to move. Press Start when you’re ready!</p>
+          <div class="game-actions"><button id="snake-start" class="button button-dark">Start game</button><button id="snake-restart" class="button button-outline">Restart</button></div>
+          <div class="snake-controls" aria-label="Touch controls">
+            <button data-snake-dir="up" aria-label="Move up">↑</button>
+            <div><button data-snake-dir="left" aria-label="Move left">←</button><button data-snake-dir="down" aria-label="Move down">↓</button><button data-snake-dir="right" aria-label="Move right">→</button></div>
+          </div>
+        </div>
+      </section>
     </main>
 
     <footer class="footer"><a class="footer-brand" href="#home">PocketJam <span>✦</span></a><span>Made for little breaks and big fun.</span><span>© <span id="year"></span> PocketJam</span></footer>
