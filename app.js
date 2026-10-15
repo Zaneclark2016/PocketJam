@@ -10,7 +10,8 @@
     { id: "cookie", title: "Cookie Baker", desc: "Bake a tiny cookie empire, one click at a time.", tag: "Incremental", art: "cookie-art", emoji: "🍪", label: "FEATURED", page: "cookie", playable: true },
     { id: "dino", title: "Dino Dash", desc: "Jump, dodge, and see how far your little dino can run.", tag: "Endless runner", art: "dino-art", emoji: "🦖", label: "QUICK REFLEXES", page: "dino", playable: true },
     { id: "bubble", title: "Bubble Pop", desc: "Pop your way to a new personal best in 30 seconds.", tag: "Score attack", art: "bubble-art", emoji: "🫧", label: "30-SECOND GAME", page: "bubble", playable: true },
-    { id: "flappy", title: "Flappy Bird", desc: "Flap through the pipes and chase a high score.", tag: "Arcade classic", art: "flappy-art", emoji: "🐤", label: "NEW GAME", page: "flappy", playable: true }
+    { id: "flappy", title: "Flappy Bird", desc: "Flap through the pipes and chase a high score.", tag: "Arcade classic", art: "flappy-art", emoji: "🐤", label: "NEW GAME", page: "flappy", playable: true },
+    { id: "snake", title: "Snake", desc: "Eat apples, grow longer, and avoid your own tail.", tag: "Classic arcade", art: "snake-art", emoji: "🐍", label: "CLASSIC", page: "snake", playable: true }
   ];
 
   const buildings = [
@@ -36,7 +37,7 @@
   const defaultState = () => ({
     cookies: 0, clickPower: 1, owned: { oven: 0, baker: 0, mixer: 0, double: 0, conveyor: 0 },
     purchased: { spatula: false, timekeeper: false, bigger: false },
-    favorites: [], bests: { dino: 0, bubble: 0, flappy: 0 }, lastSeen: Date.now(), lastSaved: Date.now()
+    favorites: [], bests: { dino: 0, bubble: 0, flappy: 0, snake: 0 }, lastSeen: Date.now(), lastSaved: Date.now()
   });
   let state = defaultState();
   let toastTimer = null;
@@ -108,6 +109,7 @@
     window.scrollTo({ top: 0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
     if (page === "dino") drawDino();
     if (page === "flappy") drawFlappy();
+    if (page === "snake") drawSnake();
     if (page === "cookie") renderCookie();
   }
 
@@ -458,6 +460,109 @@
     resetFlappy();
   }
 
+
+  // Snake: grid-based arcade game with keyboard and touch controls.
+  const snakeCanvas = $("#snake-canvas");
+  const snakeCtx = snakeCanvas.getContext("2d");
+  const snakeCols = 25, snakeRows = 20, snakeTile = 24;
+  const snakeGame = { active: false, over: false, score: 0, best: 0, body: [], dir: {x:1,y:0}, nextDir: {x:1,y:0}, apple: {x:17,y:10}, timer: null };
+  function placeSnakeApple() {
+    let spot;
+    do { spot = { x: Math.floor(Math.random()*snakeCols), y: Math.floor(Math.random()*snakeRows) }; }
+    while (snakeGame.body.some(part => part.x === spot.x && part.y === spot.y));
+    snakeGame.apple = spot;
+  }
+  function resetSnake() {
+    clearInterval(snakeGame.timer);
+    snakeGame.active = false; snakeGame.over = false; snakeGame.score = 0;
+    snakeGame.body = [{x:12,y:10},{x:11,y:10},{x:10,y:10}];
+    snakeGame.dir = {x:1,y:0}; snakeGame.nextDir = {x:1,y:0};
+    $("#snake-score").textContent = "0";
+    $("#snake-message").textContent = "Use arrow keys or WASD to move. Press Start when you’re ready!";
+    $("#snake-start").textContent = "Start game";
+    placeSnakeApple(); drawSnake();
+  }
+  function drawSnake() {
+    if (!snakeCtx) return;
+    const w=snakeCanvas.width, h=snakeCanvas.height;
+    snakeCtx.fillStyle="#102b35"; snakeCtx.fillRect(0,0,w,h);
+    snakeCtx.strokeStyle="rgba(155,220,198,.09)"; snakeCtx.lineWidth=1;
+    for(let x=0;x<=w;x+=snakeTile){snakeCtx.beginPath();snakeCtx.moveTo(x,0);snakeCtx.lineTo(x,h);snakeCtx.stroke();}
+    for(let y=0;y<=h;y+=snakeTile){snakeCtx.beginPath();snakeCtx.moveTo(0,y);snakeCtx.lineTo(w,y);snakeCtx.stroke();}
+    snakeCtx.fillStyle="#ff657a"; snakeCtx.beginPath();
+    snakeCtx.arc(snakeGame.apple.x*snakeTile+snakeTile/2,snakeGame.apple.y*snakeTile+snakeTile/2, snakeTile*.38,0,Math.PI*2); snakeCtx.fill();
+    snakeCtx.fillStyle="#ffb0b8"; snakeCtx.beginPath(); snakeCtx.arc(snakeGame.apple.x*snakeTile+snakeTile*.37,snakeGame.apple.y*snakeTile+snakeTile*.36,3,0,Math.PI*2); snakeCtx.fill();
+    snakeGame.body.forEach((part,i)=>{
+      const pad=i===0?2:3;
+      snakeCtx.fillStyle=i===0?"#8cf078":"#42d878";
+      snakeCtx.beginPath(); snakeCtx.roundRect(part.x*snakeTile+pad,part.y*snakeTile+pad,snakeTile-pad*2,snakeTile-pad*2,5); snakeCtx.fill();
+      if(i===0){
+        snakeCtx.fillStyle="#153d35";
+        const ex=part.x*snakeTile+ (snakeGame.dir.x===-1?6:snakeGame.dir.x===1?17:8);
+        const ey=part.y*snakeTile+ (snakeGame.dir.y===-1?6:snakeGame.dir.y===1?17:7);
+        if(snakeGame.dir.x!==0){snakeCtx.beginPath();snakeCtx.arc(ex,ey,2.1,0,Math.PI*2);snakeCtx.arc(ex,ey+8,2.1,0,Math.PI*2);snakeCtx.fill();}
+        else {snakeCtx.beginPath();snakeCtx.arc(ex,ey,2.1,0,Math.PI*2);snakeCtx.arc(ex+8,ey,2.1,0,Math.PI*2);snakeCtx.fill();}
+      }
+    });
+    if(!snakeGame.active){
+      snakeCtx.fillStyle="rgba(5,20,28,.72)"; snakeCtx.fillRect(0,0,w,h);
+      snakeCtx.fillStyle="#ffffff"; snakeCtx.textAlign="center";
+      snakeCtx.font="bold 30px system-ui"; snakeCtx.fillText(snakeGame.over?"Game over!":"Ready, snake?",w/2,h/2-12);
+      snakeCtx.font="16px system-ui"; snakeCtx.fillStyle="#c6f8d5";
+      snakeCtx.fillText(snakeGame.over?"Press Restart to try again":"Eat the apples. Don't bonk!",w/2,h/2+22);
+      snakeCtx.textAlign="left";
+    }
+  }
+  function startSnake() {
+    if(snakeGame.active) return;
+    if(snakeGame.over) resetSnake();
+    snakeGame.active=true; $("#snake-start").textContent="Pause";
+    $("#snake-message").textContent="Nice and steady — eat those apples!";
+    snakeGame.timer=setInterval(stepSnake,115); drawSnake();
+  }
+  function endSnake() {
+    snakeGame.active=false; snakeGame.over=true; clearInterval(snakeGame.timer);
+    $("#snake-start").textContent="Play again";
+    $("#snake-message").textContent="Game over! You scored "+snakeGame.score+".";
+    if(snakeGame.score>snakeGame.best){
+      snakeGame.best=snakeGame.score; state.bests.snake=snakeGame.best;
+      $("#snake-best").textContent=snakeGame.best; saveState();
+    }
+    drawSnake();
+  }
+  function stepSnake() {
+    snakeGame.dir={...snakeGame.nextDir};
+    const head={x:snakeGame.body[0].x+snakeGame.dir.x,y:snakeGame.body[0].y+snakeGame.dir.y};
+    const eating=head.x===snakeGame.apple.x && head.y===snakeGame.apple.y;
+    const bodyToCheck=eating?snakeGame.body:snakeGame.body.slice(0,-1);
+    if(head.x<0||head.y<0||head.x>=snakeCols||head.y>=snakeRows||bodyToCheck.some(p=>p.x===head.x&&p.y===head.y)){endSnake();return;}
+    snakeGame.body.unshift(head);
+    if(eating){
+      snakeGame.score++; $("#snake-score").textContent=snakeGame.score;
+      placeSnakeApple();
+    } else snakeGame.body.pop();
+    drawSnake();
+  }
+  function changeSnakeDirection(dir) {
+    const dirs={up:{x:0,y:-1},down:{x:0,y:1},left:{x:-1,y:0},right:{x:1,y:0}};
+    const next=dirs[dir]; if(!next) return;
+    if(next.x===-snakeGame.dir.x && next.y===-snakeGame.dir.y) return;
+    snakeGame.nextDir=next;
+    if(!snakeGame.active && !snakeGame.over) drawSnake();
+  }
+  function initSnake() {
+    snakeGame.best=Number(state.bests.snake)||0; $("#snake-best").textContent=snakeGame.best;
+    $("#snake-start").addEventListener("click",()=>snakeGame.active?(snakeGame.active=false,clearInterval(snakeGame.timer),$("#snake-start").textContent="Resume",$("#snake-message").textContent="Game paused.",drawSnake()):startSnake());
+    $("#snake-restart").addEventListener("click",resetSnake);
+    $("[data-snake-dir]").forEach(button=>button.addEventListener("click",()=>changeSnakeDirection(button.dataset.snakeDir)));
+    window.addEventListener("keydown",e=>{
+      if(!$("#page-snake").classList.contains("active")) return;
+      const map={ArrowUp:"up",KeyW:"up",ArrowDown:"down",KeyS:"down",ArrowLeft:"left",KeyA:"left",ArrowRight:"right",KeyD:"right"};
+      if(map[e.code]){e.preventDefault();changeSnakeDirection(map[e.code]);}
+    });
+    resetSnake();
+  }
+
   // Bubble Pop: simple 30-second score challenge.
   let bubble = { active: false, score: 0, time: 30, best: Number(state.bests.bubble) || 0, interval: null, spawner: null };
   function spawnBubble() {
@@ -535,6 +640,7 @@
     initDino();
     initBubble();
     initFlappy();
+    initSnake();
     renderAllCards();
     if (location.hash && ["home","games","favorites","about"].includes(location.hash.slice(1))) navigate(location.hash.slice(1));
   }
