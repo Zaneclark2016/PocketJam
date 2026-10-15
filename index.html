@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PocketJam — Little games. Big fun!</title>
+<style>
+:root{--ink:#24233b;--yellow:#ffe36e;--mint:#a7f3d0;--coral:#ff897e;--purple:#b9a5ff;--paper:#fffaf0}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+header{padding:24px 5vw;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+.logo{font-weight:950;font-size:1.6rem;letter-spacing:-1px}.logo span{display:inline-grid;place-items:center;background:var(--yellow);width:38px;height:38px;border-radius:12px;margin-right:8px}
+nav{display:flex;gap:16px}a{color:inherit;text-decoration:none;font-weight:750}a:hover{text-decoration:underline}
+main{max-width:1100px;margin:auto;padding:10px 5vw 60px}.hero{background:var(--mint);border:3px solid var(--ink);border-radius:30px;padding:clamp(24px,5vw,60px);display:grid;grid-template-columns:1.2fr .8fr;align-items:center;gap:25px;box-shadow:8px 8px 0 var(--ink)}
+h1{font-size:clamp(2.6rem,7vw,5rem);line-height:.98;letter-spacing:-3px;margin:12px 0 20px}.hero p{font-size:1.15rem;max-width:480px}.eyebrow{font-weight:900;text-transform:uppercase;letter-spacing:2px}.cookie{font-size:clamp(100px,20vw,190px);text-align:center;filter:drop-shadow(5px 8px 0 #0002);animation:bob 2.5s ease-in-out infinite}@keyframes bob{50%{transform:translateY(-10px) rotate(4deg)}}
+button{font:inherit;font-weight:850;border:2px solid var(--ink);background:var(--yellow);border-radius:14px;padding:12px 18px;cursor:pointer;box-shadow:3px 3px 0 var(--ink)}button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+section{margin-top:48px}.section-head{display:flex;justify-content:space-between;align-items:end;gap:12px;flex-wrap:wrap}h2{font-size:2rem;letter-spacing:-1px;margin:0}.games{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:20px}.game{border:2px solid var(--ink);border-radius:22px;padding:22px;background:white;box-shadow:4px 4px 0 var(--ink)}.game:nth-child(1){background:#fff0ba}.game:nth-child(2){background:#d8f5ff}.game:nth-child(3){background:#f0e7ff}.emoji{font-size:3.5rem}.game h3{font-size:1.3rem;margin:8px 0 2px}.game p{min-height:48px;margin:6px 0 18px}.game button{background:white}.playbox{margin-top:18px;background:white;border:2px solid var(--ink);border-radius:22px;padding:24px;display:none}.playbox.show{display:block}.score{font-size:2.5rem;font-weight:950}.cookie-btn{font-size:5rem;border:0;background:transparent;box-shadow:none}.cookie-btn:active{box-shadow:none}.pill{display:inline-block;border-radius:99px;padding:4px 10px;background:#fff;font-size:.8rem;font-weight:850}
+footer{text-align:center;padding:25px;color:#656477}
+@media(max-width:720px){.hero{grid-template-columns:1fr}.cookie{grid-row:1;font-size:100px}.games{grid-template-columns:1fr}h1{letter-spacing:-2px}.game p{min-height:0}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<header><div class="logo"><span>🎮</span>PocketJam</div><nav><a href="#home">Home</a><a href="#games">All Games</a><a href="#about">About</a></nav></header>
+<main id="home">
+<div class="hero"><div><div class="eyebrow">✨ Your tiny arcade</div><h1>Little games.<br>Big fun!</h1><p>Take a tiny break, chase a high score, and play something delightfully silly.</p><a href="#games"><button>Pick a game →</button></a></div><div class="cookie" aria-hidden="true">🍪</div></div>
+<section id="games"><div class="section-head"><div><div class="eyebrow">Ready, player one?</div><h2>Choose your jam</h2></div><span class="pill">Free to play · No account</span></div>
+<div class="games">
+<article class="game"><div class="emoji">🍪</div><h3>Cookie Baker</h3><p>Tap cookies, earn points, and become a baking legend.</p><button onclick="play('cookie')">Play Cookie Baker</button></article>
+<article class="game"><div class="emoji">🦖</div><h3>Dino Dash</h3><p>Jump over obstacles in a tiny, speedy runner.</p><button onclick="play('dino')">Play Dino Dash</button></article>
+<article class="game"><div class="emoji">🫧</div><h3>Bubble Pop</h3><p>Pop as many bubbles as you can before time runs out.</p><button onclick="play('bubble')">Play Bubble Pop</button></article>
+</div>
+<div class="playbox" id="playbox" aria-live="polite"><button onclick="closeGame()" style="float:right">Close ✕</button><div class="eyebrow" id="game-label">Mini game</div><h2 id="game-title">Cookie Baker</h2><p id="game-desc">Tap the cookie to bake!</p><div class="score" id="score">0</div><div id="game-area"><button class="cookie-btn" onclick="bake()" aria-label="Bake a cookie">🍪</button></div><p id="game-note">Your best score is saved on this device.</p></div>
+</section>
+<section id="about"><div class="eyebrow">Small games, good vibes</div><h2>Welcome to PocketJam.</h2><p>A little corner of the internet for quick, cheerful games. Made for fun, built to be easy to play.</p></section>
+</main><footer>Made with 💛 at PocketJam · Little games. Big fun!</footer>
+<script>
+let mode='cookie',score=0,time=30,timer=null,obstacles=0;
+function play(which){clearInterval(timer);mode=which;score=0;time=30;obstacles=0;document.getElementById('playbox').classList.add('show');document.getElementById('score').textContent='0';const area=document.getElementById('game-area');area.innerHTML='';
+if(which==='cookie'){document.getElementById('game-label').textContent='🍪 Clicker';document.getElementById('game-title').textContent='Cookie Baker';document.getElementById('game-desc').textContent='Every tap bakes a cookie. How many can you make?';area.innerHTML='<button class="cookie-btn" onclick="bake()" aria-label="Bake a cookie">🍪</button>';}
+if(which==='dino'){document.getElementById('game-label').textContent='🦖 Runner';document.getElementById('game-title').textContent='Dino Dash';document.getElementById('game-desc').textContent='Tap JUMP to leap over the cactus. Every jump scores a point!';area.innerHTML='<div id="dino-scene" style="font-size:3rem;background:#e0f7ff;border-radius:16px;padding:20px;text-align:center">🦖　🌵</div><button onclick="jump()" id="jump">JUMP!</button>';document.getElementById('game-note').textContent='Tip: You can also press Space.';}
+if(which==='bubble'){document.getElementById('game-label').textContent='🫧 30-second challenge';document.getElementById('game-title').textContent='Bubble Pop';document.getElementById('game-desc').textContent='Pop as many bubbles as you can in 30 seconds!';area.innerHTML='<button class="cookie-btn" onclick="pop()" aria-label="Pop bubble">🫧</button><div>Time left: <b id="time-left">30</b>s</div>';timer=setInterval(()=>{time--;const el=document.getElementById('time-left');if(el)el.textContent=time;if(time<=0){clearInterval(timer);document.getElementById('game-desc').textContent='Time! Final score: '+score+' 🎉';area.innerHTML='<button onclick="play(\'bubble\')">Play again</button>';saveBest();}},1000);}
+document.getElementById('playbox').scrollIntoView({behavior:'smooth',block:'nearest'});}
+function bake(){if(mode!=='cookie')return;score++;updateScore();if(score%10===0)document.getElementById('game-desc').textContent='Nice! '+score+' cookies baked. Keep going!';saveBest();}
+function pop(){if(mode!=='bubble'||time<=0)return;score++;updateScore();const emojis=['🫧','💙','✨','💜','🩵'];const b=document.querySelector('#game-area .cookie-btn');if(b)b.textContent=emojis[Math.floor(Math.random()*emojis.length)];}
+function jump(){if(mode!=='dino')return;score++;updateScore();const scene=document.getElementById('dino-scene');if(scene){scene.textContent=score%2?'　🦖　🌵':'🦖　🌵';scene.style.background=score%2?'#d9fbe8':'#e0f7ff';}saveBest();}
+function updateScore(){document.getElementById('score').textContent=score;}
+function saveBest(){try{let best=JSON.parse(localStorage.getItem('pocketjam-bests')||'{}');if(score>(best[mode]||0)){best[mode]=score;localStorage.setItem('pocketjam-bests',JSON.stringify(best));document.getElementById('game-note').textContent='New personal best: '+score+'! Saved on this device.';}}catch(e){}}
+function closeGame(){clearInterval(timer);document.getElementById('playbox').classList.remove('show');}
+document.addEventListener('keydown',e=>{if(e.code==='Space'&&mode==='dino'&&document.getElementById('playbox').classList.contains('show')){e.preventDefault();jump();}});
+</script></body></html>
