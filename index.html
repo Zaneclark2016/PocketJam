@@ -7,6 +7,18 @@
   <title>PocketJam — Little games. Big fun.</title>
   <meta name="description" content="PocketJam is a tiny arcade full of quick, cheerful games.">
   <link rel="stylesheet" href="styles.css">
+  <style>
+    /* Prevent rapid taps on game controls from triggering double-tap zoom.
+       Pinch-to-zoom and normal page scrolling remain available. */
+    button, a, [role="button"] {
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .big-cookie, #bubble-field button, #dino-jump {
+      -webkit-user-select: none;
+      user-select: none;
+    }
+  </style>
 </head>
 <body>
   <div class="site-shell">
