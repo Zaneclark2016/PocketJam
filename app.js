@@ -339,7 +339,7 @@
   }
 
   // Flappy Bird: tap or press Space to flap through the pipes.
-  const flappy = { active: false, over: false, score: 0, best: 0, birdY: 185, velocity: 0, pipes: [], frame: 0, last: 0, raf: 0 };
+  const flappy = { active: false, over: false, score: 0, best: 0, birdY: 185, velocity: 0, pipes: [], frame: 0, nextPipeAt: 34, last: 0, raf: 0 };
   const flappyCanvas = $("#flappy-canvas");
   const flappyCtx = flappyCanvas.getContext("2d");
   function drawFlappy() {
@@ -392,7 +392,7 @@
   }
   function resetFlappy() {
     cancelAnimationFrame(flappy.raf);
-    flappy.active = false; flappy.over = false; flappy.score = 0; flappy.birdY = 185; flappy.velocity = 0; flappy.pipes = []; flappy.frame = 0; flappy.last = 0;
+    flappy.active = false; flappy.over = false; flappy.score = 0; flappy.birdY = 185; flappy.velocity = 0; flappy.pipes = []; flappy.frame = 0; flappy.nextPipeAt = 34; flappy.last = 0;
     $("#flappy-score").textContent = "0"; $("#flappy-message").textContent = "Tap, click, or press Space to flap.";
     drawFlappy();
   }
@@ -409,22 +409,43 @@
   }
   function stepFlappy(now) {
     if (!flappy.active) return;
-    const dt = Math.min((now - flappy.last) / 16.67, 2.2); flappy.last = now; flappy.frame += dt;
-    flappy.velocity += 0.28 * dt; flappy.birdY += flappy.velocity * dt;
-    if (flappy.frame % 92 < dt) flappy.pipes.push({ x: 790, gapY: 115 + Math.random() * 190, passed: false });
+    const dt = Math.min(Math.max((now - flappy.last) / 16.67, 0), 2.5);
+    flappy.last = now;
+    flappy.frame += dt;
+    flappy.velocity += 0.28 * dt;
+    flappy.birdY += flappy.velocity * dt;
+
+    // Spawn pipes on a fixed frame schedule so timing stays reliable at different frame rates.
+    if (flappy.frame >= flappy.nextPipeAt) {
+      flappy.pipes.push({ x: flappyCanvas.width + 30, gapY: 115 + Math.random() * 190, passed: false });
+      flappy.nextPipeAt = flappy.frame + 92;
+    }
+
     flappy.pipes.forEach(p => {
       p.x -= 3.15 * dt;
-      if (!p.passed && p.x + 64 < 160) { p.passed = true; flappy.score++; $("#flappy-score").textContent = flappy.score; }
+      if (!p.passed && p.x + 64 < 180) {
+        p.passed = true;
+        flappy.score++;
+        $("#flappy-score").textContent = flappy.score;
+      }
     });
     flappy.pipes = flappy.pipes.filter(p => p.x > -80);
-    const birdLeft = 160, birdRight = 200, birdTop = flappy.birdY - 13, birdBottom = flappy.birdY + 13;
+
+    const birdLeft = 160, birdRight = 200;
+    const birdTop = flappy.birdY - 14, birdBottom = flappy.birdY + 14;
     const hitPipe = flappy.pipes.some(p => {
       const overlapX = birdRight > p.x - 6 && birdLeft < p.x + 70;
       const gapTop = p.gapY - 71, gapBottom = p.gapY + 71;
       return overlapX && (birdTop < gapTop || birdBottom > gapBottom);
     });
-    if (flappy.birdY < 12 || flappy.birdY > 386 || hitPipe) { endFlappy(); return; }
-    drawFlappy(); flappy.raf = requestAnimationFrame(stepFlappy);
+    const hitCeiling = flappy.birdY - 14 <= 0;
+    const hitGround = flappy.birdY + 14 >= flappyCanvas.height - 34;
+    if (hitCeiling || hitGround || hitPipe) {
+      endFlappy();
+      return;
+    }
+    drawFlappy();
+    flappy.raf = requestAnimationFrame(stepFlappy);
   }
   function initFlappy() {
     flappy.best = Number(state.bests.flappy) || 0; $("#flappy-best").textContent = flappy.best;
@@ -485,19 +506,8 @@
     $("#bubble-again").addEventListener("click", startBubble);
   }
 
-  function bindGameButtons(root = document) {
-    $("[data-page], [data-open-game]", root).forEach(button => {
-      if (button.dataset.pocketjamBound === "true") return;
-      button.dataset.pocketjamBound = "true";
-      button.addEventListener("click", event => {
-        event.stopPropagation();
-        navigate(button.dataset.page || button.dataset.openGame);
-      });
-    });
-  }
 
   function initNavigation() {
-    bindGameButtons();
     document.addEventListener("click", event => {
       const pageButton = event.target.closest("[data-page]");
       const openButton = event.target.closest("[data-open-game]");
@@ -526,7 +536,6 @@
     initBubble();
     initFlappy();
     renderAllCards();
-    bindGameButtons();
     if (location.hash && ["home","games","favorites","about"].includes(location.hash.slice(1))) navigate(location.hash.slice(1));
   }
   init();
