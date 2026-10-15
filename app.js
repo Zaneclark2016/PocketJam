@@ -275,15 +275,22 @@
     ctx.fillStyle = "#167052"; ctx.fillRect(82,166-dy,16,6);
     // Green cactus obstacles with little side arms.
     dino.obstacles.forEach(o => {
-      const top = 185 - o.h;
+      // Keep every cactus anchored to the ground line (y = 215).
+      const cactusHeight = o.h;
+      const top = 215 - cactusHeight;
+      const stemW = Math.max(10, o.w - 10);
+      const stemX = o.x + (o.w - stemW) / 2;
       ctx.fillStyle = "#2f9e55";
-      ctx.fillRect(o.x + 5, top, o.w - 10, o.h);
-      ctx.fillRect(o.x - 1, top + o.h * 0.42, 7, 7);
-      ctx.fillRect(o.x - 1, top + o.h * 0.42, 4, 14);
-      ctx.fillRect(o.x + o.w - 6, top + o.h * 0.25, 7, 7);
-      ctx.fillRect(o.x + o.w + 1, top + o.h * 0.25, 4, 13);
+      ctx.fillRect(stemX, top, stemW, cactusHeight);
+      // Side arms stay attached to the stem and within its height.
+      const armY = top + cactusHeight * 0.45;
+      ctx.fillRect(stemX - 5, armY, 6, 7);
+      ctx.fillRect(stemX - 5, armY, 4, Math.min(14, 215 - armY));
+      const rightArmY = top + cactusHeight * 0.28;
+      ctx.fillRect(stemX + stemW - 1, rightArmY, 6, 7);
+      ctx.fillRect(stemX + stemW + 2, rightArmY, 4, Math.min(13, 215 - rightArmY));
       ctx.fillStyle = "#66c878";
-      ctx.fillRect(o.x + 7, top + 4, 3, Math.max(7, o.h - 9));
+      ctx.fillRect(stemX + 2, top + 4, 3, Math.max(7, cactusHeight - 4));
     });
     ctx.fillStyle = "#8eae9e"; ctx.font = "bold 12px system-ui"; ctx.fillText("POCKETJAM PARK", 18, 24);
     if (!dino.running && !dino.over) { ctx.fillStyle = "rgba(255,255,255,.72)"; ctx.fillRect(220,80,320,66); ctx.fillStyle = "#294b3c"; ctx.font = "bold 20px system-ui"; ctx.textAlign = "center"; ctx.fillText("Ready, dino?",380,107); ctx.font = "12px system-ui"; ctx.fillText("Jump over the little stumps!",380,128); ctx.textAlign = "left"; }
