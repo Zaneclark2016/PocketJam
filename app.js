@@ -279,8 +279,9 @@
       const top = 215 - height;
       const stemW = Math.max(10, o.w - 10);
       const stemX = o.x + (o.w - stemW) / 2;
-      const leftY = top + height * 0.58;
-      const rightY = top + height * 0.35;
+      // Lower both arm joints so they sit closer to the cactus base.
+      const leftY = top + height * 0.58 + 6;
+      const rightY = top + height * 0.35 + 6;
       ctx.fillStyle = "#2f9e55";
       // Arms are thick and drawn behind the trunk so they visibly connect.
       ctx.fillRect(stemX - 7, leftY, 10, 7);
