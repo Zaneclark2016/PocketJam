@@ -273,10 +273,17 @@
     ctx.fillStyle = "#fff"; ctx.fillRect(128,140-dy,8,8); ctx.fillStyle = "#233c32"; ctx.fillRect(132,142-dy,4,4);
     ctx.fillStyle = "#f5b6a5"; ctx.fillRect(115,154-dy,18,5);
     ctx.fillStyle = "#167052"; ctx.fillRect(82,166-dy,16,6);
+    // Green cactus obstacles with little side arms.
     dino.obstacles.forEach(o => {
-      ctx.fillStyle = "#e77b61"; ctx.fillRect(o.x, 185-o.h, o.w, o.h);
-      ctx.fillRect(o.x-7, 195-o.h, 8, 12);
-      ctx.fillStyle = "#f7a38b"; ctx.fillRect(o.x+4, 190-o.h, 4, Math.max(8,o.h-10));
+      const top = 185 - o.h;
+      ctx.fillStyle = "#2f9e55";
+      ctx.fillRect(o.x + 5, top, o.w - 10, o.h);
+      ctx.fillRect(o.x - 1, top + o.h * 0.42, 7, 7);
+      ctx.fillRect(o.x - 1, top + o.h * 0.42, 4, 14);
+      ctx.fillRect(o.x + o.w - 6, top + o.h * 0.25, 7, 7);
+      ctx.fillRect(o.x + o.w + 1, top + o.h * 0.25, 4, 13);
+      ctx.fillStyle = "#66c878";
+      ctx.fillRect(o.x + 7, top + 4, 3, Math.max(7, o.h - 9));
     });
     ctx.fillStyle = "#8eae9e"; ctx.font = "bold 12px system-ui"; ctx.fillText("POCKETJAM PARK", 18, 24);
     if (!dino.running && !dino.over) { ctx.fillStyle = "rgba(255,255,255,.72)"; ctx.fillRect(220,80,320,66); ctx.fillStyle = "#294b3c"; ctx.font = "bold 20px system-ui"; ctx.textAlign = "center"; ctx.fillText("Ready, dino?",380,107); ctx.font = "12px system-ui"; ctx.fillText("Jump over the little stumps!",380,128); ctx.textAlign = "left"; }
@@ -298,7 +305,8 @@
     const dt = Math.min((now - dino.last) / 16.67, 2.2); dino.last = now; dino.frame += dt;
     dino.vy -= .55 * dt; dino.y = Math.max(0, dino.y + dino.vy * dt); if (dino.y === 0) dino.vy = 0;
     if (dino.frame % Math.max(32, 72 - dino.score / 8) < dt) dino.obstacles.push({ x: 780, w: 18 + Math.random()*10, h: 24 + Math.random()*23, passed: false });
-    const speed = 4 + Math.min(5, dino.score / 120);
+    // Start a little quicker, then gradually ramp up as the run continues.
+    const speed = 5.2 + Math.min(5.5, dino.score / 110);
     dino.obstacles.forEach(o => { o.x -= speed * dt; if (!o.passed && o.x + o.w < 82) { o.passed = true; dino.score += 1; $("#dino-score").textContent = dino.score; } });
     dino.obstacles = dino.obstacles.filter(o => o.x > -40);
     const collision = dino.obstacles.some(o => o.x < 121 && o.x + o.w > 76 && (215-o.h) < (202-dino.y) && dino.y < o.h + 25);
