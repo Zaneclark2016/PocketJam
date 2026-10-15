@@ -485,7 +485,19 @@
     $("#bubble-again").addEventListener("click", startBubble);
   }
 
+  function bindGameButtons(root = document) {
+    $("[data-page], [data-open-game]", root).forEach(button => {
+      if (button.dataset.pocketjamBound === "true") return;
+      button.dataset.pocketjamBound = "true";
+      button.addEventListener("click", event => {
+        event.stopPropagation();
+        navigate(button.dataset.page || button.dataset.openGame);
+      });
+    });
+  }
+
   function initNavigation() {
+    bindGameButtons();
     document.addEventListener("click", event => {
       const pageButton = event.target.closest("[data-page]");
       const openButton = event.target.closest("[data-open-game]");
@@ -514,6 +526,7 @@
     initBubble();
     initFlappy();
     renderAllCards();
+    bindGameButtons();
     if (location.hash && ["home","games","favorites","about"].includes(location.hash.slice(1))) navigate(location.hash.slice(1));
   }
   init();
