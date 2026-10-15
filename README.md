@@ -1,21 +1,21 @@
-# PocketJam 🎮
-**Little games. Big fun!**
+# PocketJam — first playable prototype
 
-PocketJam is a tiny, cheerful browser arcade. The current prototype is a single-file website, so it runs without installing anything and can be hosted on GitHub Pages.
+This is the first build of PocketJam, made with plain HTML, CSS, and JavaScript.
 
-## Games
-- **Cookie Baker** — tap the cookie to bake and beat your personal best.
-- **Dino Dash** — tap **JUMP!** (or press Space) to rack up points.
-- **Bubble Pop** — pop bubbles in a 30-second challenge.
+## Run it
+1. Unzip the project.
+2. Open `index.html` in a modern browser.
+3. For the most reliable browser-storage behavior, you can run a simple local static server from this folder, or publish the folder to a static host.
 
-## Run locally
-Open `index.html` in a modern browser.
+## What's included
+- Responsive PocketJam homepage, navigation, game cards, favorites, and About page
+- Cookie Baker: clicking, buildings, upgrades, production, collection, visual milestones, local autosave, manual save, and up to 8 hours of offline earnings after buying Bakery Timekeeper
+- Dino Dash: keyboard/tap jumping, obstacles, score, personal best, replay
+- Bubble Pop: 30-second tap/click score challenge and personal best
+- Local browser storage; no account or backend
 
-## Publish with GitHub Pages
-1. Open this repository on GitHub.
-2. Go to **Settings → Pages**.
-3. Under **Build and deployment**, choose **Deploy from a branch**.
-4. Select branch **main** and folder **/(root)**, then click **Save**.
-5. After GitHub finishes deploying, the site should be available at https://zaneclark2016.github.io/PocketJam/
-
-Scores are saved in your browser's local storage on that device. No account or server is required.
+## Notes
+- This is a first playable prototype. Prices, production, and gameplay balance are initial values and need playtesting.
+- Saves are stored in the browser on the current device. Clearing site data can erase them.
+- The first version does not include accounts, cloud saves, or a global leaderboard.
+- This project intentionally uses original CSS/canvas artwork and emoji rather than copied game assets.

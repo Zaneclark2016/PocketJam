@@ -1,0 +1,403 @@
+(() => {
+  "use strict";
+  const STORAGE_KEY = "pocketjam.save.v1";
+  const $ = (selector, root = document) => root.querySelector(selector);
+  const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
+  const fmt = n => Math.floor(n).toLocaleString();
+  const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
+
+  const gameInfo = [
+    { id: "cookie", title: "Cookie Baker", desc: "Bake a tiny cookie empire, one click at a time.", tag: "Incremental", art: "cookie-art", emoji: "🍪", label: "FEATURED", page: "cookie", playable: true },
+    { id: "dino", title: "Dino Dash", desc: "Jump, dodge, and see how far your little dino can run.", tag: "Endless runner", art: "dino-art", emoji: "🦖", label: "QUICK REFLEXES", page: "dino", playable: true },
+    { id: "bubble", title: "Bubble Pop", desc: "Pop your way to a new personal best in 30 seconds.", tag: "Score attack", art: "bubble-art", emoji: "🫧", label: "30-SECOND GAME", page: "bubble", playable: true }
+  ];
+
+  const buildings = [
+    { id: "oven", name: "Little Oven", emoji: "🔥", cost: 50, cps: 1, desc: "A tiny oven that keeps the cookies coming." },
+    { id: "baker", name: "Extra Baker", emoji: "🧑‍🍳", cost: 150, cps: 3, desc: "A helpful baker who never minds another batch." },
+    { id: "mixer", name: "Cookie Mixer", emoji: "🥣", cost: 400, cps: 8, desc: "Mixes dough while you plan your next move." },
+    { id: "double", name: "Double Oven", emoji: "♨️", cost: 1200, cps: 25, desc: "Twice the oven, twice the cookie potential." },
+    { id: "conveyor", name: "Cookie Conveyor", emoji: "🏭", cost: 5000, cps: 100, desc: "A full-on cookie production line." }
+  ];
+  const upgrades = [
+    { id: "spatula", name: "Better Spatula", emoji: "🥄", cost: 25, desc: "+1 cookie per click.", type: "click", amount: 1 },
+    { id: "timekeeper", name: "Bakery Timekeeper", emoji: "⏰", cost: 500, desc: "Unlocks earnings while you’re away (up to 8 hours).", type: "offline", amount: 0 },
+    { id: "bigger", name: "Bigger Bakery", emoji: "🏪", cost: 1000, desc: "All buildings produce 20% more cookies.", type: "boost", amount: 0.2 }
+  ];
+  const stageData = [
+    { name: "Kitchen Table", desc: "Every cookie empire starts somewhere.", min: 0, icon: "🏡", className: "stage-1", items: [] },
+    { name: "Little Bakery", desc: "Your first little bakery is taking shape.", min: 1, icon: "🏠", className: "stage-2", items: ["🔥"] },
+    { name: "Busy Bakery", desc: "Things are heating up in the kitchen.", min: 4, icon: "🥣", className: "stage-3", items: ["🔥", "🧑‍🍳", "🥣"] },
+    { name: "Cookie Workshop", desc: "A proper cookie-making operation!", min: 10, icon: "🏭", className: "stage-4", items: ["🔥", "🧑‍🍳", "🥣", "♨️", "🍪"] },
+    { name: "Cookie Empire", desc: "Behold: a legendary cookie empire.", min: 25, icon: "👑", className: "stage-5", items: ["🔥", "🧑‍🍳", "🥣", "♨️", "🏭"] }
+  ];
+
+  const defaultState = () => ({
+    cookies: 0, clickPower: 1, owned: { oven: 0, baker: 0, mixer: 0, double: 0, conveyor: 0 },
+    purchased: { spatula: false, timekeeper: false, bigger: false },
+    favorites: [], bests: { dino: 0, bubble: 0 }, lastSeen: Date.now(), lastSaved: Date.now()
+  });
+  let state = defaultState();
+  let toastTimer = null;
+  let saveLabelTimer = null;
+  let offlineAwardToShow = 0;
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      state = { ...defaultState(), ...parsed };
+      state.owned = { ...defaultState().owned, ...(parsed.owned || {}) };
+      state.purchased = { ...defaultState().purchased, ...(parsed.purchased || {}) };
+      state.bests = { ...defaultState().bests, ...(parsed.bests || {}) };
+      state.favorites = Array.isArray(parsed.favorites) ? parsed.favorites : [];
+      state.cookies = Math.max(0, Number(state.cookies) || 0);
+      state.clickPower = Math.max(1, Number(state.clickPower) || 1);
+      if (state.purchased.timekeeper && Number.isFinite(Number(state.lastSeen))) {
+        const elapsedSeconds = clamp((Date.now() - Number(state.lastSeen)) / 1000, 0, 8 * 60 * 60);
+        offlineAwardToShow = Math.floor(getCps() * elapsedSeconds);
+        if (offlineAwardToShow > 0) state.cookies += offlineAwardToShow;
+      }
+      state.lastSeen = Date.now();
+    } catch (error) {
+      console.warn("PocketJam save could not be loaded.", error);
+      state = defaultState();
+    }
+  }
+  function saveState(manual = false) {
+    state.lastSeen = Date.now();
+    state.lastSaved = Date.now();
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      const label = $("#save-status");
+      if (label) label.textContent = manual ? "· Saved!" : "· Auto-save on";
+      if (manual) showToast("Progress saved on this device!");
+      clearTimeout(saveLabelTimer);
+      saveLabelTimer = setTimeout(() => { if (label) label.textContent = "· Auto-save on"; }, 1800);
+    } catch (error) {
+      showToast("Couldn’t save — browser storage may be full.");
+    }
+  }
+  function getTotalBuildings() { return buildings.reduce((sum, b) => sum + (state.owned[b.id] || 0), 0); }
+  function getCps() {
+    const base = buildings.reduce((sum, b) => sum + b.cps * (state.owned[b.id] || 0), 0);
+    return base * (state.purchased.bigger ? 1.2 : 1);
+  }
+  function currentStage() {
+    const total = getTotalBuildings();
+    let result = stageData[0];
+    stageData.forEach(stage => { if (total >= stage.min) result = stage; });
+    return result;
+  }
+  function showToast(message) {
+    const toast = $("#toast");
+    toast.textContent = message;
+    toast.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove("show"), 2300);
+  }
+  function navigate(page) {
+    const target = $(`#page-${page}`);
+    if (!target) return;
+    $$(".page").forEach(p => p.classList.toggle("active", p === target));
+    $$(".nav-link").forEach(link => link.classList.toggle("active", link.dataset.page === page || (page === "cookie" && link.dataset.page === "home")));
+    $("#main-nav").classList.remove("open");
+    $("#menu-toggle").setAttribute("aria-expanded", "false");
+    window.scrollTo({ top: 0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    if (page === "dino") drawDino();
+    if (page === "cookie") renderCookie();
+  }
+
+  function renderCards(targetSelector, list) {
+    const target = $(targetSelector);
+    if (!target) return;
+    target.innerHTML = "";
+    list.forEach(game => {
+      const card = document.createElement("article");
+      card.className = "game-card";
+      card.innerHTML = `
+        <div class="card-art ${game.art}">
+          <span class="card-sticker">${game.label}</span>
+          <button class="favorite-button ${state.favorites.includes(game.id) ? "favorited" : ""}" data-favorite="${game.id}" aria-label="${state.favorites.includes(game.id) ? "Remove" : "Add"} ${game.title} ${state.favorites.includes(game.id) ? "from" : "to"} favorites" aria-pressed="${state.favorites.includes(game.id)}">${state.favorites.includes(game.id) ? "♥" : "♡"}</button>
+          <span class="card-illustration" aria-hidden="true">${game.emoji}</span>
+        </div>
+        <div class="card-body">
+          <div class="card-title-row"><h3>${game.title}</h3></div>
+          <p>${game.desc}</p>
+          <div class="card-meta"><span class="card-tag">${game.tag}</span><button class="card-play" data-open-game="${game.id}">Play →</button></div>
+        </div>`;
+      target.appendChild(card);
+    });
+  }
+  function renderAllCards() {
+    renderCards("#home-game-grid", gameInfo);
+    renderCards("#all-game-grid", gameInfo);
+    renderCards("#favorite-game-grid", gameInfo.filter(g => state.favorites.includes(g.id)));
+    $("#favorite-count").textContent = state.favorites.length;
+    $("#empty-favorites").hidden = state.favorites.length > 0;
+  }
+  function toggleFavorite(id) {
+    state.favorites = state.favorites.includes(id) ? state.favorites.filter(x => x !== id) : [...state.favorites, id];
+    renderAllCards();
+    saveState();
+    showToast(state.favorites.includes(id) ? "Added to your favorites ♡" : "Removed from favorites");
+  }
+
+  function renderShop() {
+    $("#building-shop").innerHTML = buildings.map(b => {
+      const count = state.owned[b.id] || 0;
+      const cost = Math.floor(b.cost * Math.pow(1.16, count));
+      const canBuy = state.cookies >= cost;
+      return `<article class="shop-item ${canBuy ? "affordable" : ""}">
+        <div class="shop-icon">${b.emoji}</div><div class="shop-item-info">
+          <div class="shop-item-top"><h3>${b.name}</h3><span class="shop-owned">Owned ${count}</span></div>
+          <p>${b.desc} +${b.cps} cookie${b.cps === 1 ? "" : "s"}/sec each.</p>
+          <div class="shop-buy-row"><span class="shop-price">🍪 ${fmt(cost)}</span><button class="buy-button" data-buy-building="${b.id}" ${canBuy ? "" : "disabled"}>Buy</button></div>
+        </div></article>`;
+    }).join("");
+    $("#upgrade-shop").innerHTML = upgrades.map(u => {
+      const bought = state.purchased[u.id];
+      const canBuy = !bought && state.cookies >= u.cost;
+      return `<article class="shop-item ${canBuy ? "affordable" : ""}">
+        <div class="shop-icon">${u.emoji}</div><div class="shop-item-info">
+          <div class="shop-item-top"><h3>${u.name}</h3><span class="shop-owned">${bought ? "Owned ✓" : "Upgrade"}</span></div>
+          <p>${u.desc}</p>
+          <div class="shop-buy-row"><span class="shop-price">${bought ? "Purchased" : `🍪 ${fmt(u.cost)}`}</span><button class="buy-button" data-buy-upgrade="${u.id}" ${canBuy ? "" : "disabled"}>${bought ? "Done" : "Buy"}</button></div>
+        </div></article>`;
+    }).join("");
+  }
+  function renderCollection() {
+    $("#collection-list").innerHTML = buildings.map(b => {
+      const count = state.owned[b.id] || 0;
+      return `<div class="collection-item"><span class="building-emoji">${b.emoji}</span><div><strong>${b.name}</strong><small>+${b.cps} / sec each</small></div><span class="collection-count">${count}</span></div>`;
+    }).join("");
+    const stage = currentStage();
+    const scene = $("#bakery-scene");
+    scene.className = `bakery-scene ${stage.className}`;
+    $("#stage-name").textContent = stage.name;
+    $("#stage-description").textContent = stage.desc;
+    $("#milestone-row .milestone-icon");
+    $(".milestone-icon").textContent = stage.icon;
+    $("#building-total").textContent = `${getTotalBuildings()} building${getTotalBuildings() === 1 ? "" : "s"}`;
+    $("#scene-items").innerHTML = stage.items.map((emoji, i) => `<span class="scene-item" style="transform:rotate(${(i%2?9:-9)}deg)">${emoji}</span>`).join("");
+  }
+  function renderCookie() {
+    $("#cookie-count").textContent = fmt(state.cookies);
+    $("#cookie-rate").textContent = `${fmt(getCps())} cookie${Math.floor(getCps()) === 1 ? "" : "s"} per second`;
+    $("#click-power").textContent = fmt(state.clickPower);
+    renderShop();
+    renderCollection();
+  }
+  function buyBuilding(id) {
+    const b = buildings.find(item => item.id === id);
+    if (!b) return;
+    const cost = Math.floor(b.cost * Math.pow(1.16, state.owned[id] || 0));
+    if (state.cookies < cost) return;
+    state.cookies -= cost;
+    state.owned[id] = (state.owned[id] || 0) + 1;
+    renderCookie(); saveState(); showToast(`${b.name} added to your bakery!`);
+  }
+  function buyUpgrade(id) {
+    const u = upgrades.find(item => item.id === id);
+    if (!u || state.purchased[id] || state.cookies < u.cost) return;
+    state.cookies -= u.cost;
+    state.purchased[id] = true;
+    if (u.type === "click") state.clickPower += u.amount;
+    renderCookie(); saveState(); showToast(`${u.name} unlocked!`);
+  }
+  function clickCookie() {
+    state.cookies += state.clickPower;
+    const layer = $("#click-floats");
+    const floater = document.createElement("span");
+    floater.className = "float-number";
+    floater.textContent = `+${fmt(state.clickPower)}`;
+    floater.style.left = `${43 + Math.random() * 20}%`;
+    floater.style.top = `${42 + Math.random() * 20}%`;
+    layer.appendChild(floater);
+    setTimeout(() => floater.remove(), 850);
+    renderCookie();
+  }
+  function initCookie() {
+    $("#cookie-button").addEventListener("click", clickCookie);
+    $("#save-button").addEventListener("click", () => saveState(true));
+    $("#dismiss-welcome").addEventListener("click", () => $("#welcome-back").hidden = true);
+    $$("[data-shop-tab]").forEach(button => button.addEventListener("click", () => {
+      const tab = button.dataset.shopTab;
+      $$("[data-shop-tab]").forEach(b => { b.classList.toggle("active", b === button); b.setAttribute("aria-selected", b === button ? "true" : "false"); });
+      $("#shop-buildings").classList.toggle("active", tab === "buildings");
+      $("#shop-upgrades").classList.toggle("active", tab === "upgrades");
+    }));
+    $("#building-shop").addEventListener("click", event => {
+      const button = event.target.closest("[data-buy-building]");
+      if (button) buyBuilding(button.dataset.buyBuilding);
+    });
+    $("#upgrade-shop").addEventListener("click", event => {
+      const button = event.target.closest("[data-buy-upgrade]");
+      if (button) buyUpgrade(button.dataset.buyUpgrade);
+    });
+    if (offlineAwardToShow > 0 && state.purchased.timekeeper) {
+      $("#offline-award").textContent = `+${fmt(offlineAwardToShow)} cookies baked while you were away`;
+      $("#welcome-back").hidden = false;
+    }
+    renderCookie();
+    setInterval(() => {
+      const cps = getCps();
+      if (cps > 0) state.cookies += cps;
+      renderCookie();
+    }, 1000);
+    setInterval(() => saveState(), 5000);
+    window.addEventListener("beforeunload", () => saveState());
+  }
+
+  // Dino Dash: lightweight canvas runner, no external assets.
+  const dino = { running: false, over: false, score: 0, best: 0, y: 0, vy: 0, obstacles: [], last: 0, frame: 0, raf: 0 };
+  const canvas = $("#dino-canvas");
+  const ctx = canvas.getContext("2d");
+  function drawDino() {
+    if (!ctx) return;
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0,0,w,h);
+    ctx.fillStyle = "#e3f7ec"; ctx.fillRect(0,0,w,h);
+    ctx.fillStyle = "#b7e7d1"; ctx.beginPath(); ctx.ellipse(90,210,95,24,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = "#9ad9bb"; ctx.beginPath(); ctx.ellipse(650,205,140,35,0,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle = "#5b9c7e"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0,215); ctx.lineTo(w,215); ctx.stroke();
+    // Clouds
+    ctx.fillStyle = "rgba(255,255,255,.8)";
+    [[160,48],[520,70]].forEach(([x,y]) => { ctx.beginPath(); ctx.arc(x,y,15,0,Math.PI*2); ctx.arc(x+17,y-7,20,0,Math.PI*2); ctx.arc(x+38,y,14,0,Math.PI*2); ctx.fill(); });
+    const dy = dino.y;
+    // Cute dinosaur
+    ctx.fillStyle = "#258b6c"; ctx.fillRect(82,154-dy,42,48); ctx.fillRect(105,132-dy,37,34);
+    ctx.fillRect(74,174-dy,18,12); ctx.fillRect(67,164-dy,12,10);
+    ctx.fillStyle = "#258b6c"; ctx.fillRect(88,196-dy,12,18); ctx.fillRect(111,196-dy,12,18);
+    ctx.fillStyle = "#fff"; ctx.fillRect(128,140-dy,8,8); ctx.fillStyle = "#233c32"; ctx.fillRect(132,142-dy,4,4);
+    ctx.fillStyle = "#f5b6a5"; ctx.fillRect(115,154-dy,18,5);
+    ctx.fillStyle = "#167052"; ctx.fillRect(82,166-dy,16,6);
+    dino.obstacles.forEach(o => {
+      ctx.fillStyle = "#e77b61"; ctx.fillRect(o.x, 185-o.h, o.w, o.h);
+      ctx.fillRect(o.x-7, 195-o.h, 8, 12);
+      ctx.fillStyle = "#f7a38b"; ctx.fillRect(o.x+4, 190-o.h, 4, Math.max(8,o.h-10));
+    });
+    ctx.fillStyle = "#8eae9e"; ctx.font = "bold 12px system-ui"; ctx.fillText("POCKETJAM PARK", 18, 24);
+    if (!dino.running && !dino.over) { ctx.fillStyle = "rgba(255,255,255,.72)"; ctx.fillRect(220,80,320,66); ctx.fillStyle = "#294b3c"; ctx.font = "bold 20px system-ui"; ctx.textAlign = "center"; ctx.fillText("Ready, dino?",380,107); ctx.font = "12px system-ui"; ctx.fillText("Jump over the little stumps!",380,128); ctx.textAlign = "left"; }
+    if (dino.over) { ctx.fillStyle = "rgba(255,255,255,.85)"; ctx.fillRect(220,78,320,72); ctx.fillStyle = "#294b3c"; ctx.textAlign = "center"; ctx.font = "bold 20px system-ui"; ctx.fillText("Run over!",380,107); ctx.font = "12px system-ui"; ctx.fillText("Tap Play again to have another go.",380,129); ctx.textAlign = "left"; }
+  }
+  function resetDino() {
+    cancelAnimationFrame(dino.raf);
+    dino.running = false; dino.over = false; dino.score = 0; dino.y = 0; dino.vy = 0; dino.obstacles = []; dino.last = 0; dino.frame = 0;
+    $("#dino-score").textContent = "0"; $("#dino-message").textContent = "Press Space, ↑, or tap JUMP to start.";
+    drawDino();
+  }
+  function jumpDino() {
+    if (dino.over) return;
+    if (!dino.running) { dino.running = true; dino.last = performance.now(); dino.raf = requestAnimationFrame(stepDino); $("#dino-message").textContent = "Nice run! Keep hopping."; }
+    if (dino.y <= 0) dino.vy = 10.8;
+  }
+  function stepDino(now) {
+    if (!dino.running) return;
+    const dt = Math.min((now - dino.last) / 16.67, 2.2); dino.last = now; dino.frame += dt;
+    dino.vy -= .55 * dt; dino.y = Math.max(0, dino.y + dino.vy * dt); if (dino.y === 0) dino.vy = 0;
+    if (dino.frame % Math.max(32, 72 - dino.score / 8) < dt) dino.obstacles.push({ x: 780, w: 18 + Math.random()*10, h: 24 + Math.random()*23, passed: false });
+    const speed = 4 + Math.min(5, dino.score / 120);
+    dino.obstacles.forEach(o => { o.x -= speed * dt; if (!o.passed && o.x + o.w < 82) { o.passed = true; dino.score += 1; $("#dino-score").textContent = dino.score; } });
+    dino.obstacles = dino.obstacles.filter(o => o.x > -40);
+    const collision = dino.obstacles.some(o => o.x < 121 && o.x + o.w > 76 && (215-o.h) < (202-dino.y) && dino.y < o.h + 25);
+    if (collision) {
+      dino.running = false; dino.over = true;
+      if (dino.score > dino.best) { dino.best = dino.score; state.bests.dino = dino.best; $("#dino-best").textContent = dino.best; saveState(); }
+      $("#dino-message").textContent = `Run over! You scored ${dino.score}.`;
+      drawDino(); return;
+    }
+    drawDino(); dino.raf = requestAnimationFrame(stepDino);
+  }
+  function initDino() {
+    dino.best = Number(state.bests.dino) || 0; $("#dino-best").textContent = dino.best;
+    $("#dino-jump").addEventListener("click", jumpDino);
+    $("#dino-restart").addEventListener("click", resetDino);
+    canvas.addEventListener("pointerdown", jumpDino);
+    window.addEventListener("keydown", e => {
+      if (["Space","ArrowUp"].includes(e.code) && $("#page-dino").classList.contains("active")) { e.preventDefault(); jumpDino(); }
+    });
+    resetDino();
+  }
+
+  // Bubble Pop: simple 30-second score challenge.
+  let bubble = { active: false, score: 0, time: 30, best: Number(state.bests.bubble) || 0, interval: null, spawner: null };
+  function spawnBubble() {
+    const field = $("#bubble-field");
+    if (!bubble.active) return;
+    const b = document.createElement("button");
+    const size = 42 + Math.random() * 35;
+    const colors = ["#b8e9ff", "#ffc7df", "#d9ccff", "#c5f2d9", "#ffe59a"];
+    b.className = "bubble";
+    b.setAttribute("aria-label", "Pop bubble for one point");
+    b.style.width = `${size}px`; b.style.height = `${size}px`;
+    b.style.left = `${Math.random() * Math.max(1, field.clientWidth-size)}px`;
+    b.style.top = `${Math.random() * Math.max(1, field.clientHeight-size)}px`;
+    b.style.background = colors[Math.floor(Math.random()*colors.length)];
+    b.addEventListener("click", () => {
+      if (!bubble.active) return;
+      bubble.score += 1; $("#bubble-score").textContent = bubble.score; b.remove();
+      if (Math.random() < .2) spawnBubble();
+    }, { once: true });
+    field.appendChild(b);
+    setTimeout(() => b.remove(), 2600);
+  }
+  function finishBubble() {
+    bubble.active = false; clearInterval(bubble.interval); clearInterval(bubble.spawner);
+    $$(".bubble", $("#bubble-field")).forEach(b => b.remove());
+    $("#bubble-message").textContent = `Time! You popped ${bubble.score} bubbles.`;
+    $("#bubble-again").hidden = false;
+    if (bubble.score > bubble.best) {
+      bubble.best = bubble.score; state.bests.bubble = bubble.best; $("#bubble-best").textContent = bubble.best; saveState();
+      $("#bubble-message").textContent += " New personal best!";
+    }
+  }
+  function startBubble() {
+    clearInterval(bubble.interval); clearInterval(bubble.spawner);
+    bubble.active = true; bubble.score = 0; bubble.time = 30;
+    $("#bubble-score").textContent = "0"; $("#bubble-time").textContent = "30"; $("#bubble-message").textContent = "Pop, pop, pop!";
+    $("#bubble-again").hidden = true;
+    $("#bubble-field").innerHTML = "";
+    for (let i=0;i<5;i++) spawnBubble();
+    bubble.spawner = setInterval(() => { if (bubble.active) spawnBubble(); }, 650);
+    bubble.interval = setInterval(() => { bubble.time--; $("#bubble-time").textContent = bubble.time; if (bubble.time <= 0) finishBubble(); }, 1000);
+  }
+  function initBubble() {
+    $("#bubble-best").textContent = bubble.best;
+    $("#bubble-start").addEventListener("click", startBubble);
+    $("#bubble-again").addEventListener("click", startBubble);
+  }
+
+  function initNavigation() {
+    document.addEventListener("click", event => {
+      const pageButton = event.target.closest("[data-page]");
+      const openButton = event.target.closest("[data-open-game]");
+      const favButton = event.target.closest("[data-favorite]");
+      if (pageButton) { navigate(pageButton.dataset.page); return; }
+      if (openButton) { navigate(openButton.dataset.openGame); return; }
+      if (favButton) { event.stopPropagation(); toggleFavorite(favButton.dataset.favorite); }
+    });
+    $("#menu-toggle").addEventListener("click", () => {
+      const nav = $("#main-nav");
+      nav.classList.toggle("open");
+      $("#menu-toggle").setAttribute("aria-expanded", nav.classList.contains("open") ? "true" : "false");
+    });
+    window.addEventListener("hashchange", () => {
+      const page = location.hash.replace("#", "");
+      if (["home","games","favorites","about"].includes(page)) navigate(page);
+    });
+  }
+
+  function init() {
+    $("#year").textContent = new Date().getFullYear();
+    loadState();
+    initNavigation();
+    initCookie();
+    initDino();
+    initBubble();
+    renderAllCards();
+    if (location.hash && ["home","games","favorites","about"].includes(location.hash.slice(1))) navigate(location.hash.slice(1));
+  }
+  init();
+})();

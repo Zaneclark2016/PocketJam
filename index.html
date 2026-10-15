@@ -1,49 +1,143 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>PocketJam — Little games. Big fun!</title>
-<style>
-:root{--ink:#24233b;--yellow:#ffe36e;--mint:#a7f3d0;--coral:#ff897e;--purple:#b9a5ff;--paper:#fffaf0}
-*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
-header{padding:24px 5vw;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
-.logo{font-weight:950;font-size:1.6rem;letter-spacing:-1px}.logo span{display:inline-grid;place-items:center;background:var(--yellow);width:38px;height:38px;border-radius:12px;margin-right:8px}
-nav{display:flex;gap:16px}a{color:inherit;text-decoration:none;font-weight:750}a:hover{text-decoration:underline}
-main{max-width:1100px;margin:auto;padding:10px 5vw 60px}.hero{background:var(--mint);border:3px solid var(--ink);border-radius:30px;padding:clamp(24px,5vw,60px);display:grid;grid-template-columns:1.2fr .8fr;align-items:center;gap:25px;box-shadow:8px 8px 0 var(--ink)}
-h1{font-size:clamp(2.6rem,7vw,5rem);line-height:.98;letter-spacing:-3px;margin:12px 0 20px}.hero p{font-size:1.15rem;max-width:480px}.eyebrow{font-weight:900;text-transform:uppercase;letter-spacing:2px}.cookie{font-size:clamp(100px,20vw,190px);text-align:center;filter:drop-shadow(5px 8px 0 #0002);animation:bob 2.5s ease-in-out infinite}@keyframes bob{50%{transform:translateY(-10px) rotate(4deg)}}
-button{font:inherit;font-weight:850;border:2px solid var(--ink);background:var(--yellow);border-radius:14px;padding:12px 18px;cursor:pointer;box-shadow:3px 3px 0 var(--ink)}button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
-section{margin-top:48px}.section-head{display:flex;justify-content:space-between;align-items:end;gap:12px;flex-wrap:wrap}h2{font-size:2rem;letter-spacing:-1px;margin:0}.games{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:20px}.game{border:2px solid var(--ink);border-radius:22px;padding:22px;background:white;box-shadow:4px 4px 0 var(--ink)}.game:nth-child(1){background:#fff0ba}.game:nth-child(2){background:#d8f5ff}.game:nth-child(3){background:#f0e7ff}.emoji{font-size:3.5rem}.game h3{font-size:1.3rem;margin:8px 0 2px}.game p{min-height:48px;margin:6px 0 18px}.game button{background:white}.playbox{margin-top:18px;background:white;border:2px solid var(--ink);border-radius:22px;padding:24px;display:none}.playbox.show{display:block}.score{font-size:2.5rem;font-weight:950}.cookie-btn{font-size:5rem;border:0;background:transparent;box-shadow:none}.cookie-btn:active{box-shadow:none}.pill{display:inline-block;border-radius:99px;padding:4px 10px;background:#fff;font-size:.8rem;font-weight:850}
-footer{text-align:center;padding:25px;color:#656477}
-@media(max-width:720px){.hero{grid-template-columns:1fr}.cookie{grid-row:1;font-size:100px}.games{grid-template-columns:1fr}h1{letter-spacing:-2px}.game p{min-height:0}}
-@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;scroll-behavior:auto!important}}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#fff4c8">
+  <title>PocketJam — Little games. Big fun.</title>
+  <meta name="description" content="PocketJam is a tiny arcade full of quick, cheerful games.">
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<header><div class="logo"><span>🎮</span>PocketJam</div><nav><a href="#home">Home</a><a href="#games">All Games</a><a href="#about">About</a></nav></header>
-<main id="home">
-<div class="hero"><div><div class="eyebrow">✨ Your tiny arcade</div><h1>Little games.<br>Big fun!</h1><p>Take a tiny break, chase a high score, and play something delightfully silly.</p><a href="#games"><button>Pick a game →</button></a></div><div class="cookie" aria-hidden="true">🍪</div></div>
-<section id="games"><div class="section-head"><div><div class="eyebrow">Ready, player one?</div><h2>Choose your jam</h2></div><span class="pill">Free to play · No account</span></div>
-<div class="games">
-<article class="game"><div class="emoji">🍪</div><h3>Cookie Baker</h3><p>Tap cookies, earn points, and become a baking legend.</p><button onclick="play('cookie')">Play Cookie Baker</button></article>
-<article class="game"><div class="emoji">🦖</div><h3>Dino Dash</h3><p>Jump over obstacles in a tiny, speedy runner.</p><button onclick="play('dino')">Play Dino Dash</button></article>
-<article class="game"><div class="emoji">🫧</div><h3>Bubble Pop</h3><p>Pop as many bubbles as you can before time runs out.</p><button onclick="play('bubble')">Play Bubble Pop</button></article>
-</div>
-<div class="playbox" id="playbox" aria-live="polite"><button onclick="closeGame()" style="float:right">Close ✕</button><div class="eyebrow" id="game-label">Mini game</div><h2 id="game-title">Cookie Baker</h2><p id="game-desc">Tap the cookie to bake!</p><div class="score" id="score">0</div><div id="game-area"><button class="cookie-btn" onclick="bake()" aria-label="Bake a cookie">🍪</button></div><p id="game-note">Your best score is saved on this device.</p></div>
-</section>
-<section id="about"><div class="eyebrow">Small games, good vibes</div><h2>Welcome to PocketJam.</h2><p>A little corner of the internet for quick, cheerful games. Made for fun, built to be easy to play.</p></section>
-</main><footer>Made with 💛 at PocketJam · Little games. Big fun!</footer>
-<script>
-let mode='cookie',score=0,time=30,timer=null,obstacles=0;
-function play(which){clearInterval(timer);mode=which;score=0;time=30;obstacles=0;document.getElementById('playbox').classList.add('show');document.getElementById('score').textContent='0';const area=document.getElementById('game-area');area.innerHTML='';
-if(which==='cookie'){document.getElementById('game-label').textContent='🍪 Clicker';document.getElementById('game-title').textContent='Cookie Baker';document.getElementById('game-desc').textContent='Every tap bakes a cookie. How many can you make?';area.innerHTML='<button class="cookie-btn" onclick="bake()" aria-label="Bake a cookie">🍪</button>';}
-if(which==='dino'){document.getElementById('game-label').textContent='🦖 Runner';document.getElementById('game-title').textContent='Dino Dash';document.getElementById('game-desc').textContent='Tap JUMP to leap over the cactus. Every jump scores a point!';area.innerHTML='<div id="dino-scene" style="font-size:3rem;background:#e0f7ff;border-radius:16px;padding:20px;text-align:center">🦖　🌵</div><button onclick="jump()" id="jump">JUMP!</button>';document.getElementById('game-note').textContent='Tip: You can also press Space.';}
-if(which==='bubble'){document.getElementById('game-label').textContent='🫧 30-second challenge';document.getElementById('game-title').textContent='Bubble Pop';document.getElementById('game-desc').textContent='Pop as many bubbles as you can in 30 seconds!';area.innerHTML='<button class="cookie-btn" onclick="pop()" aria-label="Pop bubble">🫧</button><div>Time left: <b id="time-left">30</b>s</div>';timer=setInterval(()=>{time--;const el=document.getElementById('time-left');if(el)el.textContent=time;if(time<=0){clearInterval(timer);document.getElementById('game-desc').textContent='Time! Final score: '+score+' 🎉';area.innerHTML='<button onclick="play(\'bubble\')">Play again</button>';saveBest();}},1000);}
-document.getElementById('playbox').scrollIntoView({behavior:'smooth',block:'nearest'});}
-function bake(){if(mode!=='cookie')return;score++;updateScore();if(score%10===0)document.getElementById('game-desc').textContent='Nice! '+score+' cookies baked. Keep going!';saveBest();}
-function pop(){if(mode!=='bubble'||time<=0)return;score++;updateScore();const emojis=['🫧','💙','✨','💜','🩵'];const b=document.querySelector('#game-area .cookie-btn');if(b)b.textContent=emojis[Math.floor(Math.random()*emojis.length)];}
-function jump(){if(mode!=='dino')return;score++;updateScore();const scene=document.getElementById('dino-scene');if(scene){scene.textContent=score%2?'　🦖　🌵':'🦖　🌵';scene.style.background=score%2?'#d9fbe8':'#e0f7ff';}saveBest();}
-function updateScore(){document.getElementById('score').textContent=score;}
-function saveBest(){try{let best=JSON.parse(localStorage.getItem('pocketjam-bests')||'{}');if(score>(best[mode]||0)){best[mode]=score;localStorage.setItem('pocketjam-bests',JSON.stringify(best));document.getElementById('game-note').textContent='New personal best: '+score+'! Saved on this device.';}}catch(e){}}
-function closeGame(){clearInterval(timer);document.getElementById('playbox').classList.remove('show');}
-document.addEventListener('keydown',e=>{if(e.code==='Space'&&mode==='dino'&&document.getElementById('playbox').classList.contains('show')){e.preventDefault();jump();}});
-</script></body></html>
+  <div class="site-shell">
+    <header class="topbar">
+      <a class="brand" href="#home" aria-label="PocketJam home">
+        <span class="brand-mark" aria-hidden="true">PJ</span>
+        <span><strong>PocketJam</strong><small>Little games. Big fun.</small></span>
+      </a>
+      <button class="menu-toggle" id="menu-toggle" aria-expanded="false" aria-controls="main-nav">☰ <span class="sr-only">Toggle navigation</span></button>
+      <nav id="main-nav" class="nav-links" aria-label="Main navigation">
+        <button class="nav-link active" data-page="home">Home</button>
+        <button class="nav-link" data-page="games">All Games</button>
+        <button class="nav-link" data-page="favorites">Favorites <span id="favorite-count" class="nav-count">0</span></button>
+        <button class="nav-link" data-page="about">About</button>
+      </nav>
+    </header>
+
+    <main>
+      <section id="page-home" class="page active">
+        <div class="hero">
+          <div class="hero-copy">
+            <span class="eyebrow"><span class="sparkle">✦</span> YOUR LITTLE CORNER OF FUN</span>
+            <h1>Got a minute?<br><span>Make it a game.</span></h1>
+            <p>Small games, big smiles. Pick something fun and jump right in.</p>
+            <button class="button button-dark" data-open-game="cookie">Play Cookie Baker <span aria-hidden="true">→</span></button>
+          </div>
+          <div class="hero-art" aria-label="Illustration of a cheerful cookie and stars" role="img">
+            <div class="sunburst"></div><span class="hero-star star-one">✦</span><span class="hero-star star-two">✧</span>
+            <div class="hero-cookie"><span class="cookie-chip chip-a"></span><span class="cookie-chip chip-b"></span><span class="cookie-chip chip-c"></span><span class="cookie-chip chip-d"></span><span class="cookie-smile">⌣</span></div>
+            <div class="floating-pill pill-one">+ yummy!</div><div class="floating-pill pill-two">🍪</div>
+          </div>
+        </div>
+
+        <section class="section-block">
+          <div class="section-heading">
+            <div><span class="eyebrow">THE ARCADE</span><h2>Pick your next obsession</h2></div>
+            <button class="text-button" data-page="games">See all games <span aria-hidden="true">→</span></button>
+          </div>
+          <div id="home-game-grid" class="game-grid"></div>
+        </section>
+        <section class="mini-banner">
+          <div class="banner-icon">♡</div>
+          <div><h3>Make it your arcade</h3><p>Tap the heart on any game to save it to your favorites on this device.</p></div>
+          <button class="button button-light" data-page="favorites">My favorites</button>
+        </section>
+      </section>
+
+      <section id="page-games" class="page">
+        <div class="page-heading"><span class="eyebrow">THE WHOLE COLLECTION</span><h1>All games</h1><p>Quick to start. Hard to put down.</p></div>
+        <div id="all-game-grid" class="game-grid"></div>
+      </section>
+
+      <section id="page-favorites" class="page">
+        <div class="page-heading"><span class="eyebrow">SAVED FOR LATER</span><h1>Your favorites</h1><p>Your personal little arcade.</p></div>
+        <div id="favorite-game-grid" class="game-grid"></div>
+        <p id="empty-favorites" class="empty-state" hidden>No favorites yet. Tap the heart on a game card to save one here. ♡</p>
+      </section>
+
+      <section id="page-about" class="page">
+        <div class="page-heading"><span class="eyebrow">HELLO, PLAYER</span><h1>A little fun goes a long way.</h1><p>PocketJam is a tiny arcade for the in-between moments: colorful, lightweight games that are easy to pick up and play.</p></div>
+        <div class="about-card"><div class="about-emoji">🎮</div><div><h2>Small games. Big personality.</h2><p>We’re starting with three bite-sized games and growing from there. Your favorites and personal bests stay in this browser on this device in this first version.</p><p class="muted">PocketJam is an independent project. More jams are on the way.</p></div></div>
+      </section>
+
+      <section id="page-cookie" class="page game-page">
+        <div class="game-topline"><button class="back-button" data-page="home">← Back to arcade</button><span class="eyebrow">POCKETJAM ORIGINAL</span></div>
+        <div class="game-title-row"><div><span class="eyebrow">INCREMENTAL BAKERY GAME</span><h1>Cookie Baker <span class="game-emoji">🍪</span></h1><p>One cookie at a time, build something sweet.</p></div><button class="button button-outline" id="save-button">Save progress</button></div>
+        <div id="welcome-back" class="welcome-back" hidden>
+          <div class="welcome-cookie">🍪</div><div><h2>Welcome back, Baker!</h2><p>Your bakery has been busy while you were away!</p><strong id="offline-award">+0 cookies baked while you were away</strong><p class="welcome-signoff">Let’s get baking!</p></div>
+          <button id="dismiss-welcome" class="close-welcome" aria-label="Dismiss welcome message">×</button>
+        </div>
+        <div class="bakery-layout">
+          <section class="bakery-panel">
+            <div class="bakery-stats">
+              <div><span class="stat-label">YOUR COOKIES</span><strong id="cookie-count">0</strong><span id="cookie-rate" class="stat-sub">0 per second</span></div>
+              <div class="click-stat"><span class="stat-label">PER CLICK</span><strong id="click-power">1</strong></div>
+            </div>
+            <div id="bakery-scene" class="bakery-scene stage-1">
+              <div class="scene-sun"></div><div class="scene-window"><span></span><span></span><span></span><span></span></div>
+              <div class="shelf shelf-top"></div><div class="shelf shelf-bottom"></div>
+              <div id="scene-items" class="scene-items"></div>
+              <div class="counter"></div>
+              <button id="cookie-button" class="big-cookie" aria-label="Bake one cookie">
+                <span class="big-chip chip-1"></span><span class="big-chip chip-2"></span><span class="big-chip chip-3"></span><span class="big-chip chip-4"></span><span class="big-chip chip-5"></span><span class="cookie-face"><i></i><i></i><b></b></span>
+              </button>
+              <div class="click-hint">TAP THE COOKIE TO BAKE!</div>
+              <div id="click-floats" class="click-floats" aria-hidden="true"></div>
+            </div>
+            <div class="milestone-row"><span class="milestone-icon">🏡</span><div><strong id="stage-name">Kitchen Table</strong><p id="stage-description">Every cookie empire starts somewhere.</p></div><span id="building-total" class="building-total">0 buildings</span></div>
+            <div class="collection">
+              <div class="collection-heading"><h3>Your bakery collection</h3><span>BUILDINGS</span></div>
+              <div id="collection-list" class="collection-list"></div>
+            </div>
+          </section>
+          <aside class="shop-panel">
+            <div class="shop-tabs" role="tablist" aria-label="Bakery shop">
+              <button class="shop-tab active" data-shop-tab="buildings" role="tab" aria-selected="true">Buildings</button>
+              <button class="shop-tab" data-shop-tab="upgrades" role="tab" aria-selected="false">Upgrades</button>
+            </div>
+            <div id="shop-buildings" class="shop-content active" role="tabpanel"><div class="shop-intro"><h2>Build your bakery</h2><p>Little helpers, big cookie energy.</p></div><div id="building-shop" class="shop-list"></div></div>
+            <div id="shop-upgrades" class="shop-content" role="tabpanel"><div class="shop-intro"><h2>Smart upgrades</h2><p>Make every click count.</p></div><div id="upgrade-shop" class="shop-list"></div></div>
+            <div class="shop-footer"><span class="save-dot"></span> Progress saves on this device <span id="save-status">· Auto-save on</span></div>
+          </aside>
+        </div>
+      </section>
+
+      <section id="page-dino" class="page game-page">
+        <div class="game-topline"><button class="back-button" data-page="home">← Back to arcade</button><span class="eyebrow">POCKETJAM ORIGINAL</span></div>
+        <div class="page-heading"><span class="eyebrow">ENDLESS RUNNER</span><h1>Dino Dash 🦖</h1><p>Hop over obstacles and see how far you can go.</p></div>
+        <div class="simple-game-card">
+          <div class="dino-scoreline"><span>Score <strong id="dino-score">0</strong></span><span>Best <strong id="dino-best">0</strong></span></div>
+          <canvas id="dino-canvas" width="760" height="250" aria-label="Dino Dash game area"></canvas>
+          <p id="dino-message" class="game-message">Press Space, ↑, or tap JUMP to start.</p>
+          <div class="game-actions"><button id="dino-jump" class="button button-dark">Jump!</button><button id="dino-restart" class="button button-outline">Play again</button></div>
+        </div>
+      </section>
+
+      <section id="page-bubble" class="page game-page">
+        <div class="game-topline"><button class="back-button" data-page="home">← Back to arcade</button><span class="eyebrow">POCKETJAM ORIGINAL</span></div>
+        <div class="page-heading"><span class="eyebrow">30-SECOND CHALLENGE</span><h1>Bubble Pop 🫧</h1><p>Pop as many bubbles as you can before time runs out.</p></div>
+        <div class="bubble-game-card">
+          <div class="bubble-scoreline"><span>Score <strong id="bubble-score">0</strong></span><span>Time <strong id="bubble-time">30</strong>s</span><span>Best <strong id="bubble-best">0</strong></span></div>
+          <div id="bubble-field" class="bubble-field"><div class="bubble-start"><span>🫧</span><h2>Ready, set, pop!</h2><p>Every bubble is a point. Keep your eyes moving!</p><button id="bubble-start" class="button button-dark">Start round</button></div></div>
+          <p id="bubble-message" class="game-message">You have 30 seconds. Make them count!</p>
+          <button id="bubble-again" class="button button-outline" hidden>Play again</button>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer"><a class="footer-brand" href="#home">PocketJam <span>✦</span></a><span>Made for little breaks and big fun.</span><span>© <span id="year"></span> PocketJam</span></footer>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="app.js"></script>
+</body>
+</html>
