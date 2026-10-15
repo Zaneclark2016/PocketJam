@@ -554,7 +554,7 @@
     snakeGame.best=Number(state.bests.snake)||0; $("#snake-best").textContent=snakeGame.best;
     $("#snake-start").addEventListener("click",()=>snakeGame.active?(snakeGame.active=false,clearInterval(snakeGame.timer),$("#snake-start").textContent="Resume",$("#snake-message").textContent="Game paused.",drawSnake()):startSnake());
     $("#snake-restart").addEventListener("click",resetSnake);
-    $("[data-snake-dir]").forEach(button=>button.addEventListener("click",()=>changeSnakeDirection(button.dataset.snakeDir)));
+    document.querySelectorAll("[data-snake-dir]").forEach(button=>button.addEventListener("click",()=>changeSnakeDirection(button.dataset.snakeDir)));
     window.addEventListener("keydown",e=>{
       if(!$("#page-snake").classList.contains("active")) return;
       const map={ArrowUp:"up",KeyW:"up",ArrowDown:"down",KeyS:"down",ArrowLeft:"left",KeyA:"left",ArrowRight:"right",KeyD:"right"};
