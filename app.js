@@ -273,24 +273,23 @@
     ctx.fillStyle = "#fff"; ctx.fillRect(128,140-dy,8,8); ctx.fillStyle = "#233c32"; ctx.fillRect(132,142-dy,4,4);
     ctx.fillStyle = "#f5b6a5"; ctx.fillRect(115,154-dy,18,5);
     ctx.fillStyle = "#167052"; ctx.fillRect(82,166-dy,16,6);
-    // Green cactus obstacles with little side arms.
+    // Chunky green cacti with clearly visible arms.
     dino.obstacles.forEach(o => {
-      // Keep every cactus anchored to the ground line (y = 215).
-      const cactusHeight = o.h;
-      const top = 215 - cactusHeight;
+      const height = o.h;
+      const top = 215 - height;
       const stemW = Math.max(10, o.w - 10);
       const stemX = o.x + (o.w - stemW) / 2;
+      const leftY = top + height * 0.58;
+      const rightY = top + height * 0.35;
       ctx.fillStyle = "#2f9e55";
-      ctx.fillRect(stemX, top, stemW, cactusHeight);
-      // Side arms stay attached to the stem and within its height.
-      const armY = top + cactusHeight * 0.45;
-      ctx.fillRect(stemX - 5, armY, 6, 7);
-      ctx.fillRect(stemX - 5, armY, 4, Math.min(14, 215 - armY));
-      const rightArmY = top + cactusHeight * 0.28;
-      ctx.fillRect(stemX + stemW - 1, rightArmY, 6, 7);
-      ctx.fillRect(stemX + stemW + 2, rightArmY, 4, Math.min(13, 215 - rightArmY));
+      // Arms are thick and drawn behind the trunk so they visibly connect.
+      ctx.fillRect(stemX - 7, leftY, 10, 7);
+      ctx.fillRect(stemX - 7, leftY - 9, 7, 16);
+      ctx.fillRect(stemX + stemW - 2, rightY, 10, 7);
+      ctx.fillRect(stemX + stemW + 3, rightY - 8, 7, 15);
+      ctx.fillRect(stemX, top, stemW, height);
       ctx.fillStyle = "#66c878";
-      ctx.fillRect(stemX + 2, top + 4, 3, Math.max(7, cactusHeight - 4));
+      ctx.fillRect(stemX + 2, top + 4, 3, Math.max(7, height - 4));
     });
     ctx.fillStyle = "#8eae9e"; ctx.font = "bold 12px system-ui"; ctx.fillText("POCKETJAM PARK", 18, 24);
     if (!dino.running && !dino.over) { ctx.fillStyle = "rgba(255,255,255,.72)"; ctx.fillRect(220,80,320,66); ctx.fillStyle = "#294b3c"; ctx.font = "bold 20px system-ui"; ctx.textAlign = "center"; ctx.fillText("Ready, dino?",380,107); ctx.font = "12px system-ui"; ctx.fillText("Jump over the little stumps!",380,128); ctx.textAlign = "left"; }
