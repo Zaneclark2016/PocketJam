@@ -40,6 +40,7 @@
     favorites: [], bests: { dino: 0, bubble: 0, flappy: 0, snake: 0 }, lastSeen: Date.now(), lastSaved: Date.now()
   });
   let state = defaultState();
+  let activeGenre = "all";
   let toastTimer = null;
   let saveLabelTimer = null;
   let offlineAwardToShow = 0;
@@ -137,7 +138,21 @@
   }
   function renderAllCards() {
     renderCards("#home-game-grid", gameInfo);
-    renderCards("#all-game-grid", gameInfo);
+    const genreGames = gameInfo.filter(game => {
+      if (activeGenre === "all") return true;
+      if (activeGenre === "clicker") return game.id === "cookie";
+      if (activeGenre === "infinite") return game.id === "dino";
+      if (activeGenre === "arcade") return ["bubble", "flappy", "snake"].includes(game.id);
+      if (activeGenre === "puzzle") return game.id === "bubble" || game.id === "snake";
+      return false;
+    });
+    renderCards("#all-game-grid", genreGames);
+    const empty = $("#genre-empty-state");
+    if (empty) {
+      empty.hidden = genreGames.length > 0;
+      empty.textContent = activeGenre === "racing" ? "🏎️ Racing games are coming soon! Check back when we add a need-for-speed corner to the arcade." : "No games in this genre yet. Try another genre!";
+    }
+    $(".genre-option").forEach(button => button.classList.toggle("active", button.dataset.genre === activeGenre));
     renderCards("#favorite-game-grid", gameInfo.filter(g => state.favorites.includes(g.id)));
     $("#favorite-count").textContent = state.favorites.length;
     $("#empty-favorites").hidden = state.favorites.length > 0;
@@ -614,7 +629,49 @@
 
 
   function initNavigation() {
+    const drawer = $("#genre-drawer");
+    const drawerToggle = $("#genre-drawer-toggle");
+    const edge = $("#genre-edge");
+    let drawerCloseTimer = null;
+    const openGenres = () => {
+      clearTimeout(drawerCloseTimer);
+      drawer.classList.add("open");
+      drawerToggle.setAttribute("aria-expanded", "true");
+    };
+    const closeGenres = () => {
+      drawer.classList.remove("open");
+      drawerToggle.setAttribute("aria-expanded", "false");
+    };
+    if (drawer && drawerToggle && edge) {
+      edge.addEventListener("mouseenter", openGenres);
+      drawer.addEventListener("mouseenter", openGenres);
+      drawer.addEventListener("mouseleave", () => {
+        drawerCloseTimer = setTimeout(() => {
+          if (!drawer.matches(":focus-within")) closeGenres();
+        }, 220);
+      });
+      edge.addEventListener("mouseleave", () => {
+        drawerCloseTimer = setTimeout(() => {
+          if (!drawer.matches(":focus-within")) closeGenres();
+        }, 220);
+      });
+      drawerToggle.addEventListener("click", () => {
+        if (drawer.classList.contains("open")) closeGenres();
+        else openGenres();
+      });
+      drawer.addEventListener("focusout", event => {
+        if (!drawer.contains(event.relatedTarget)) closeGenres();
+      });
+    }
     document.addEventListener("click", event => {
+      const genreButton = event.target.closest("[data-genre]");
+      if (genreButton) {
+        activeGenre = genreButton.dataset.genre;
+        renderAllCards();
+        navigate("games");
+        closeGenres();
+        return;
+      }
       const pageButton = event.target.closest("[data-page]");
       const openButton = event.target.closest("[data-open-game]");
       const favButton = event.target.closest("[data-favorite]");
