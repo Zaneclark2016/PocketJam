@@ -182,7 +182,8 @@ function updateKart(dt){
     }
   }
   prevProgress=progress;
-  lapSamples.push({t:raceElapsed,x:kart.position.x,y:kart.position.y,z:kart.position.z,rot:heading});
+  // Ghost timestamps must be relative to the current lap, not the whole race.
+  lapSamples.push({t:Math.max(0,performance.now()-startTime-lapStart),x:kart.position.x,y:kart.position.y,z:kart.position.z,rot:heading});
   if(lapSamples.length>2400)lapSamples.shift();
   $("#speed").textContent=Math.round(Math.abs(speed)*4.2)+" km/h";
 }
