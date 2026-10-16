@@ -49,8 +49,7 @@ function makeTrack(){
   // Low-poly trees, flowers, rocks, and trackside barriers.
   for(let i=0;i<72;i++){const t=i/72*Math.PI*2;const side=i%2?1:-1;const offset=TRACK.road/2+13+Math.random()*13;const x=(TRACK.a+side*offset)*Math.cos(t);const z=(TRACK.b+side*offset*.63)*Math.sin(t);const tree=new THREE.Group();tree.position.set(x,0,z);const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.18,.26,1.5,5),mat(0x8d603a));trunk.position.y=.75;tree.add(trunk);const crown=new THREE.Mesh(new THREE.ConeGeometry(1.05+Math.random()*.35,2.2+Math.random()*1.1,6),mat([0x3b985b,0x4eaa60,0x6dbd63][i%3]));crown.position.y=2.45;tree.add(crown);scene.add(tree);}
   for(let i=0;i<60;i++){const x=(Math.random()-.5)*180,z=(Math.random()-.5)*120;if((x*x/(TRACK.a*TRACK.a)<1.55)&&(z*z/(TRACK.b*TRACK.b)<1.55))continue;const flower=new THREE.Mesh(new THREE.SphereGeometry(.22,6,5),mat([0xffd45c,0xff8fc1,0xffffff][i%3]));flower.position.set(x,.2,z);scene.add(flower);}
-  // Rolling hills in the distance.
-  for(let i=0;i<18;i++){const h=7+Math.random()*12;const hill=new THREE.Mesh(new THREE.SphereGeometry(1,8,6),mat([0x77bd69,0x6eb56d,0x9bd37a][i%3]));hill.scale.set(10+Math.random()*12,h,9+Math.random()*12);hill.position.set((Math.random()-.5)*230,h-2,(Math.random()-.5)*160);scene.add(hill);}
+  // Removed oversized spherical hills that looked like giant green balls.
   // Small start banner posts.
   for(const x of [-7,7]){const post=new THREE.Mesh(new THREE.BoxGeometry(.35,5,.35),mat(0xfaf4dc));post.position.set(x,2.5,TRACK.b+1);scene.add(post);}
   const banner=new THREE.Mesh(new THREE.BoxGeometry(14,.8,.35),mat(0xffdc58));banner.position.set(0,4.6,TRACK.b+1);scene.add(banner);
