@@ -82,7 +82,7 @@ function updateKart(dt){
   const target=(right?1:0)-(left?1:0);steer+=(target-steer)*Math.min(1,dt*7);
   // Arcade-style steering: responsive even at low speed so recovery from grass is quick.
   const grip=hand?1.35:1;
-  const steerSpeed=1.15+Math.min(Math.abs(speed),30)*0.075;
+  const steerSpeed=0.58+Math.min(Math.abs(speed),30)*0.032;
   heading-=steer*steerSpeed*dt*grip*Math.sign(speed||1);
   const forward=new THREE.Vector3(Math.sin(heading),0,Math.cos(heading));
   kart.position.addScaledVector(forward,speed*dt);
