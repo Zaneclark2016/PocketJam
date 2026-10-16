@@ -11,7 +11,8 @@
     { id: "dino", title: "Dino Dash", desc: "Jump, dodge, and see how far your little dino can run.", tag: "Endless runner", art: "dino-art", image: "assets/images/dino-dash.png", emoji: "🦖", label: "QUICK REFLEXES", page: "dino", playable: true },
     { id: "bubble", title: "Bubble Pop", desc: "Pop your way to a new personal best in 30 seconds.", tag: "Score attack", art: "bubble-art", image: "assets/images/bubble-pop.jpeg", emoji: "🫧", label: "30-SECOND GAME", page: "bubble", playable: true },
     { id: "flappy", title: "Flappy Bird", desc: "Flap through the pipes and chase a high score.", tag: "Arcade classic", art: "flappy-art", image: "assets/images/flappy-bird.jpeg", emoji: "🐤", label: "NEW GAME", page: "flappy", playable: true },
-    { id: "snake", title: "Snake", desc: "Eat apples, grow longer, and avoid your own tail.", tag: "Classic arcade", art: "snake-art", image: "assets/images/snake.jpeg", emoji: "🐍", label: "CLASSIC", page: "snake", playable: true }
+    { id: "snake", title: "Snake", desc: "Eat apples, grow longer, and avoid your own tail.", tag: "Classic arcade", art: "snake-art", image: "assets/images/snake.jpeg", emoji: "🐍", label: "CLASSIC", page: "snake", playable: true },
+    { id: "kart", title: "Pocket Kart", desc: "Race three laps around Sunny Meadow in colorful 3D.", tag: "3D racing", art: "kart-art", image: "", emoji: "🏎️", label: "NEW • 3D RACING", page: "kart", playable: true }
   ];
 
   const buildings = [
@@ -156,6 +157,7 @@
       if (activeGenre === "infinite") return game.id === "dino";
       if (activeGenre === "arcade") return ["bubble", "flappy", "snake"].includes(game.id);
       if (activeGenre === "puzzle") return game.id === "bubble" || game.id === "snake";
+      if (activeGenre === "racing") return game.id === "kart";
       return false;
     });
     renderCards("#all-game-grid", genreGames);
@@ -688,7 +690,7 @@
       const openButton = event.target.closest("[data-open-game]");
       const favButton = event.target.closest("[data-favorite]");
       if (pageButton) { navigate(pageButton.dataset.page); return; }
-      if (openButton) { navigate(openButton.dataset.openGame); return; }
+      if (openButton) { if (openButton.dataset.openGame === "kart") { window.location.href = "pocket-kart.html"; return; } navigate(openButton.dataset.openGame); return; }
       if (favButton) { event.stopPropagation(); toggleFavorite(favButton.dataset.favorite); }
     });
     $("#menu-toggle").addEventListener("click", () => {
