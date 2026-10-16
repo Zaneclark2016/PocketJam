@@ -4,7 +4,7 @@ const canvas = document.querySelector("#race-canvas");
 const stage = canvas.parentElement;
 const $ = s => document.querySelector(s);
 const BEST_KEY = "pocketjam.kart.best.v1";
-const GHOST_KEY = "pocketjam.kart.ghost.v1";
+const GHOST_KEY = "pocketjam.kart.ghost.v2";
 const TOTAL_LAPS = 3;
 const TRACK = { road: 13 };
 let trackCurve, trackSamples = [], boostPads = [], trees = [], lastBoostAt = 0, boostUntil = 0, boostSpeedCap = 38.0952380952, driftAngle = 0, driftFx = [], driftFxClock = 0;
@@ -174,7 +174,10 @@ function updateKart(dt){
     if(progress<.08 && prevProgress>.92 && distance>0){
       const lapMs=performance.now()-startTime-lapStart;
       if(lapMs>5000){
-        if(!bestLap||lapMs<bestLap){bestLap=lapMs;localStorage.setItem(BEST_KEY,String(bestLap));localStorage.setItem(GHOST_KEY,JSON.stringify(lapSamples));ghostSamples=lapSamples.slice();$("#best-lap").textContent=fmt(bestLap);$("#record-copy").textContent="New personal best: "+fmt(bestLap)+". Can you beat your own ghost?";$("#ghost-status").textContent="Ghost racer ready — your best lap is loaded.";}
+        // Always refresh the ghost with this completed lap, even if it is not a personal best.
+        const freshGhost=lapSamples.slice();
+        if(freshGhost.length>1){localStorage.setItem(GHOST_KEY,JSON.stringify(freshGhost));ghostSamples=freshGhost;ghostElapsed=0;ghostKart.visible=true;}
+        if(!bestLap||lapMs<bestLap){bestLap=lapMs;localStorage.setItem(BEST_KEY,String(bestLap));$("#best-lap").textContent=fmt(bestLap);$("#record-copy").textContent="New personal best: "+fmt(bestLap)+". Can you beat your own ghost?";$("#ghost-status").textContent="Fresh ghost saved from your latest completed lap.";}else{$("#ghost-status").textContent="Ghost replay refreshed from your latest completed lap.";} 
         lap++;lapStart=performance.now()-startTime;lapSamples=[];
         if(lap>TOTAL_LAPS){finished=true;running=false;$("#record-copy").textContent="Race complete! Total time: "+fmt(raceElapsed)+". Best lap: "+fmt(bestLap)+".";stopRace("🏆 Race complete!", "You finished all three laps in "+fmt(raceElapsed)+". Best lap: "+fmt(bestLap)+".","Race again");}
         else $("#lap").textContent=lap+" / "+TOTAL_LAPS;
