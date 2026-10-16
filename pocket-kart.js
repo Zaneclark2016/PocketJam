@@ -80,7 +80,7 @@ function updateKart(dt){
   if(hand)speed*=Math.pow(.965,dt*60);
   speed=clamp(speed,-9,38);
   const target=(right?1:0)-(left?1:0);steer+=(target-steer)*Math.min(1,dt*7);
-  const grip=hand?1.5:1;heading-=steer*speed*.018*dt*grip;
+  // Arcade-style steering: responsive even at low speed so recovery from grass is quick.\n  const grip=hand?1.35:1;const steerSpeed=0.9+Math.min(Math.abs(speed),30)*0.055;heading-=steer*steerSpeed*dt*grip*Math.sign(speed||1);
   const forward=new THREE.Vector3(Math.sin(heading),0,Math.cos(heading));
   kart.position.addScaledVector(forward,speed*dt);
   const onRoad=(kart.position.x*kart.position.x/(TRACK.a*TRACK.a)+kart.position.z*kart.position.z/(TRACK.b*TRACK.b));
@@ -108,7 +108,7 @@ function updateKart(dt){
   prevProgress=progress;
   lapSamples.push({t:raceElapsed,x:kart.position.x,y:kart.position.y,z:kart.position.z,rot:heading});
   if(lapSamples.length>2400)lapSamples.shift();
-  $("#speed").textContent=Math.round(Math.abs(speed)*5.2)+" km/h";
+  $("#speed").textContent=Math.round(Math.abs(speed)*4.2)+" km/h";
 }
 function updateGhost(dt){if(!ghostSamples||ghostSamples.length<2||!ghostKart.visible)return;ghostElapsed+=dt*1000;let i=ghostSamples.findIndex(p=>p.t>=ghostElapsed);if(i<0){ghostElapsed=0;i=0;}const a=ghostSamples[Math.max(0,i-1)],b=ghostSamples[i];if(!a||!b)return;const f=b.t===a.t?0:(ghostElapsed-a.t)/(b.t-a.t);ghostKart.position.set(THREE.MathUtils.lerp(a.x,b.x,f),.04,THREE.MathUtils.lerp(a.z,b.z,f));ghostKart.rotation.y=THREE.MathUtils.lerp(a.rot,b.rot,f);}
 function animate(){requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.04);if(running){raceElapsed=performance.now()-startTime;updateKart(dt);updateGhost(dt);$("#race-time").textContent=fmt(raceElapsed);}renderer.render(scene,camera);}
