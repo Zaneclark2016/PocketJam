@@ -131,7 +131,7 @@ function stopRace(title,copy,button="Race again"){running=false;paused=false;$("
 function pauseRace(){if(!running||finished)return;paused=true;running=false;$("#overlay-title").textContent="Race paused";$("#overlay-copy").textContent="Take a breather. Your current lap will continue when you resume.";$("#start").textContent="Resume racing";$("#overlay").hidden=false;$("#pause").textContent="▶ Resume";}
 function updateKart(dt){
   const accelerating=keys.has("ArrowUp")||keys.has("KeyW"),braking=keys.has("ArrowDown")||keys.has("KeyS"),left=keys.has("ArrowLeft")||keys.has("KeyA"),right=keys.has("ArrowRight")||keys.has("KeyD"),hand=keys.has("Space");
-  if(accelerating)speed+=25*dt;else speed-=11*dt;
+  if(accelerating)speed+=25*dt;else if(speed>0)speed=Math.max(0,speed-11*dt);
   if(braking)speed-=20*dt;
   if(hand)speed*=Math.pow(.982,dt*60);
   // Boosted speed lasts three seconds; otherwise normal driving is capped at 160 km/h.
