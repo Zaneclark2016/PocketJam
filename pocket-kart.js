@@ -70,7 +70,6 @@ function makeTrack(){
    const tr=new THREE.Mesh(new THREE.CylinderGeometry(.32,.42,1.8,6),mat(0x8d603a));tr.position.y=.9;tree.add(tr);
    const crown=new THREE.Mesh(new THREE.ConeGeometry(1.45,3.1,6),mat([0x3b985b,0x4eaa60,0x6dbd63][trees.length%3]));crown.position.y=2.65;tree.add(crown);scene.add(tree);trees.push({mesh:tree,position:new THREE.Vector3(q.x,0,q.z),radius:1.55});
  }
- for(let i=0;i<90;i++){const f=new THREE.Mesh(new THREE.SphereGeometry(.22,6,5),mat([0xffd45c,0xff8fc1,0xffffff][i%3]));f.position.set((Math.random()-.5)*240,.2,(Math.random()-.5)*190);scene.add(f);}
  for(const sign of [-1,1]){const p=start.clone().add(new THREE.Vector3(tan.z,0,-tan.x).multiplyScalar(sign*8)),post=new THREE.Mesh(new THREE.BoxGeometry(.35,4,.35),mat(0xfaf4dc));post.position.set(p.x,2,p.z);scene.add(post);}const banner=new THREE.Mesh(new THREE.BoxGeometry(16,.8,.35),mat(0xffdc58));banner.position.set(start.x,3.8,start.z);banner.rotation.y=Math.atan2(tan.x,tan.z);scene.add(banner);
 }
 function spawnDriftFX(dt, drifting){
