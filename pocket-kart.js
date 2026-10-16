@@ -155,7 +155,7 @@ function updateKart(dt){
       speed*=0.45;
     }
   }
-  const now=performance.now();for(const pad of boostPads){if(pad.usedLap!==lap&&kart.position.distanceTo(pad.position)<4&&now-lastBoostAt>350){speed=clamp(speed+13,0,46);lastBoostAt=now;pad.usedLap=lap;pad.mesh.scale.set(1.2,1.2,1.2);setTimeout(()=>pad.mesh.scale.set(1,1,1),180);break;}}
+  const now=performance.now();for(const pad of boostPads){if(pad.usedLap!==lap&&kart.position.distanceTo(pad.position)<4&&now-lastBoostAt>350){speed=clamp(speed+20/4.2,0,46);lastBoostAt=now;pad.usedLap=lap;pad.mesh.scale.set(1.2,1.2,1.2);setTimeout(()=>pad.mesh.scale.set(1,1,1),180);break;}}
   kart.position.y=0;kart.rotation.y=heading+driftAngle*.55;
   wheels.forEach(w=>w.rotation.x+=speed*dt*1.6);
   spawnDriftFX(dt,drifting);
