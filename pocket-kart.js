@@ -53,10 +53,10 @@ function spawnDriftFX(dt, drifting){
   if (!drifting) return;
   // Each rear tire gets its own stream of smoke puffs and tiny orange sparks.
   if (driftFxClock <= 0) {
-    driftFxClock = 0.035;
-    const rear = new THREE.Vector3(0, 0.34, 1.13);
+    driftFxClock = 0.055;
+    const rear = new THREE.Vector3(0, 0.28, 1.32);
     for (const side of [-1, 1]) {
-      const local = rear.clone(); local.x = side * 1.08;
+      const local = rear.clone(); local.x = side * 1.22;
       const world = local.applyAxisAngle(UP, kart.rotation.y).add(kart.position);
       const puffMat = new THREE.MeshBasicMaterial({color:0xdfe6e2, transparent:true, opacity:0.42, depthWrite:false});
       const puff = new THREE.Mesh(new THREE.SphereGeometry(0.22 + Math.random()*0.12, 7, 6), puffMat);
@@ -64,10 +64,11 @@ function spawnDriftFX(dt, drifting){
       scene.add(puff);
       driftFx.push({mesh:puff, type:"smoke", age:0, life:0.65 + Math.random()*0.35, vx:(Math.random()-.5)*1.5-speed*0.018, vz:(Math.random()-.5)*1.5-speed*0.018, vy:0.8+Math.random()*0.8});
       for (let j=0; j<2; j++) {
-        const spark = new THREE.Mesh(new THREE.SphereGeometry(0.055, 5, 4), new THREE.MeshBasicMaterial({color:j%2?0xffd85b:0xff7a32}));
-        spark.position.set(world.x, 0.16, world.z);
+        const sparkMat = new THREE.MeshBasicMaterial({color:j%2?0xfff06a:0xff5b19, toneMapped:false});
+        const spark = new THREE.Mesh(new THREE.SphereGeometry(0.105, 6, 5), sparkMat);
+        spark.position.set(world.x, 0.3, world.z);
         scene.add(spark);
-        driftFx.push({mesh:spark, type:"spark", age:0, life:0.18+Math.random()*0.18, vx:(Math.random()-.5)*5-speed*0.04, vz:(Math.random()-.5)*5-speed*0.04, vy:0.7+Math.random()*2.1});
+        driftFx.push({mesh:spark, type:"spark", age:0, life:0.32+Math.random()*0.28, vx:(Math.random()-.5)*8-speed*0.025, vz:(Math.random()-.5)*8-speed*0.025, vy:0.9+Math.random()*3.2});
       }
     }
   }
@@ -79,7 +80,7 @@ function updateDriftFX(dt){
     p.mesh.position.x+=p.vx*dt; p.mesh.position.z+=p.vz*dt; p.mesh.position.y+=p.vy*dt;
     if(p.type==="smoke"){
       const k=p.age/p.life; p.mesh.scale.setScalar(1+k*2.8); p.mesh.material.opacity=0.42*(1-k);
-    } else {p.vy-=7*dt; p.mesh.scale.setScalar(1-p.age/p.life);}
+    } else {p.vy-=7*dt; p.mesh.scale.setScalar(1.7*(1-p.age/p.life));}
   }
 }
 function clearDriftFX(){for(const p of driftFx){scene.remove(p.mesh);p.mesh.geometry.dispose();p.mesh.material.dispose();}driftFx=[];driftFxClock=0;}
