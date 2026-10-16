@@ -197,6 +197,14 @@ $("#pause").addEventListener("click",()=>{if(paused){paused=false;running=true;s
 $("#restart").addEventListener("click",()=>stopRace("Ready to race?","Start a fresh three-lap run around Sunny Meadow.","Start your engine"));
 window.addEventListener("keydown",e=>{if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space"].includes(e.code))e.preventDefault();if(e.code==="Escape"){if(running)pauseRace();return;}keys.add(e.code);});
 window.addEventListener("keyup",e=>keys.delete(e.code));
+// Mobile driving buttons hold their matching keyboard controls while pressed.
+const touchKeys = new Map([["left","ArrowLeft"],["right","ArrowRight"],["accelerate","ArrowUp"],["brake","ArrowDown"],["handbrake","Space"]]);
+ document.querySelectorAll("[data-touch-control]").forEach(button=>{
+   const code=touchKeys.get(button.dataset.touchControl); if(!code)return;
+   const release=()=>{keys.delete(code);button.classList.remove("pressed");};
+   button.addEventListener("pointerdown",e=>{e.preventDefault();keys.add(code);button.classList.add("pressed");try{button.setPointerCapture(e.pointerId);}catch{}});
+   button.addEventListener("pointerup",release);button.addEventListener("pointercancel",release);button.addEventListener("lostpointercapture",release);button.addEventListener("contextmenu",e=>e.preventDefault());
+ });
 window.addEventListener("blur",()=>{keys.clear();if(running)pauseRace();});
 $("#best-lap").textContent=fmt(bestLap);
 $("#record-copy").textContent=bestLap?"Current best lap: "+fmt(bestLap)+". Records stay on this device.":"Finish a lap to set your first record. Your best time is saved on this device.";
