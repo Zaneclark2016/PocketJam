@@ -137,6 +137,18 @@
     });
   }
   function renderAllCards() {
+    const genreHeadings = {
+      all: "All games",
+      clicker: "Clicker Games",
+      infinite: "Infinite Games",
+      arcade: "Arcade Games",
+      puzzle: "Puzzle Games",
+      racing: "Racing Games"
+    };
+    const gamesHeading = $("#page-games .page-heading h1");
+    if (gamesHeading) gamesHeading.textContent = genreHeadings[activeGenre] || "All games";
+    const gamesEyebrow = $("#page-games .page-heading .eyebrow");
+    if (gamesEyebrow) gamesEyebrow.textContent = activeGenre === "all" ? "THE WHOLE COLLECTION" : "BROWSE BY GENRE";
     renderCards("#home-game-grid", gameInfo);
     const genreGames = gameInfo.filter(game => {
       if (activeGenre === "all") return true;
