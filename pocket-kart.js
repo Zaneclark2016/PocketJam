@@ -7,7 +7,7 @@ const BEST_KEY = "pocketjam.kart.best.v1";
 const GHOST_KEY = "pocketjam.kart.ghost.v1";
 const TOTAL_LAPS = 3;
 const TRACK = { road: 13 };
-let trackCurve, trackSamples = [], boostPads = [], trees = [], lastBoostAt = 0, driftAngle = 0, driftFx = [], driftFxClock = 0;
+let trackCurve, trackSamples = [], boostPads = [], trees = [], lastBoostAt = 0, boostUntil = 0, boostSpeedCap = 38.0952380952, driftAngle = 0, driftFx = [], driftFxClock = 0;
 let renderer, scene, camera, kart, wheels = [], ghostKart, ghostWheels = [];
 let clock = new THREE.Clock();
 let running = false, finished = false, paused = false, startTime = 0, raceElapsed = 0, lapStart = 0;
@@ -132,8 +132,9 @@ function updateKart(dt){
   if(accelerating)speed+=25*dt;else speed-=11*dt;
   if(braking)speed-=20*dt;
   if(hand)speed*=Math.pow(.982,dt*60);
-  // Normal driving is capped at 160 km/h; boost pads can push above it.
-  speed=clamp(speed,-9,38.0952380952);
+  // Boosted speed lasts three seconds; otherwise normal driving is capped at 160 km/h.
+  const boostActive=performance.now()<boostUntil;
+  speed=clamp(speed,-9,boostActive?46:38.0952380952);
   const target=(right?1:0)-(left?1:0);steer+=(target-steer)*Math.min(1,dt*7);
   // Arcade-style steering: responsive even at low speed so recovery from grass is quick.
   const drifting=hand&&Math.abs(speed)>8;
@@ -146,7 +147,7 @@ function updateKart(dt){
   kart.position.addScaledVector(forward,speed*dt);
   const nearest=nearestTrack(kart.position.x,kart.position.z);
   // Off-road speed is capped at 90 km/h (the HUD converts internal speed by 4.2).
-  if(nearest.distance>TRACK.road/2+0.8){speed=clamp(speed,-9,Math.min(90/4.2,38.0952380952));}
+  if(nearest.distance>TRACK.road/2+0.8){speed=clamp(speed,-9,Math.min(90/4.2,boostActive?46:38.0952380952));}
   // Trees are kept clear of the tarmac and block the kart if it reaches their trunks/crowns.
   for(const tree of trees){
     const dx=kart.position.x-tree.position.x,dz=kart.position.z-tree.position.z,dist=Math.hypot(dx,dz),minDist=tree.radius+0.8;
@@ -156,7 +157,7 @@ function updateKart(dt){
       speed*=0.45;
     }
   }
-  const now=performance.now();for(const pad of boostPads){if(pad.usedLap!==lap&&kart.position.distanceTo(pad.position)<4&&now-lastBoostAt>350){speed=Math.min(speed+20/4.2,46);lastBoostAt=now;pad.usedLap=lap;pad.mesh.scale.set(1.2,1.2,1.2);setTimeout(()=>pad.mesh.scale.set(1,1,1),180);break;}}
+  const now=performance.now();for(const pad of boostPads){if(pad.usedLap!==lap&&kart.position.distanceTo(pad.position)<4&&now-lastBoostAt>350){speed=Math.min(speed+20/4.2,46);boostUntil=now+3000;lastBoostAt=now;pad.usedLap=lap;pad.mesh.scale.set(1.2,1.2,1.2);setTimeout(()=>pad.mesh.scale.set(1,1,1),180);break;}}
   kart.position.y=0;kart.rotation.y=heading+driftAngle*.55;
   wheels.forEach(w=>w.rotation.x+=speed*dt*1.6);
   spawnDriftFX(dt,drifting);
