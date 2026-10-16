@@ -63,8 +63,8 @@ function setup(){
   scene.add(new THREE.HemisphereLight(0xe8f7ff,0x597b45,2.1));
   const sun=new THREE.DirectionalLight(0xfff0cf,2.3);sun.position.set(-45,80,35);scene.add(sun);
   makeTrack();
-  kart=makeKart();ghostKart=makeKart(0x8ef1ff,true);ghostKart.visible=false;
-  resetKart();window.addEventListener("resize",resize);animate();
+  kart=makeKart();wheels=kart.userData.wheels;ghostKart=makeKart(0x8ef1ff,true);ghostWheels=ghostKart.userData.wheels;ghostKart.visible=false;
+  resetKart();camera.position.set(kart.position.x,-0+6,kart.position.z+12);camera.lookAt(kart.position.x,1,kart.position.z);window.addEventListener("resize",resize);animate();
 }
 function resize(){if(!renderer)return;const w=stage.clientWidth,h=stage.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
 function trackPose(t,offset=0){const a=TRACK.a+offset,b=TRACK.b+offset*.63;const angle=t*Math.PI*2;return {x:a*Math.sin(angle),z:b*Math.cos(angle),yaw:Math.atan2(a*Math.cos(angle),-b*Math.sin(angle))};}
@@ -72,7 +72,7 @@ function progressOf(x,z){return (Math.atan2(x/TRACK.a,z/TRACK.b)/(Math.PI*2)+1)%
 function resetKart(){const p=trackPose(0,-1.5);kart.position.set(p.x,0,p.z);heading=p.yaw;kart.rotation.y=heading;speed=0;steer=0;distance=0;prevProgress=0;lastLapProgress=0;lap=1;raceElapsed=0;lapStart=0;lapSamples=[];ghostElapsed=0;ghostSamples=JSON.parse(localStorage.getItem(GHOST_KEY)||"[]");ghostKart.visible=ghostSamples.length>1;$("#lap").textContent="1 / "+TOTAL_LAPS;$("#race-time").textContent=fmt(0);$("#speed").textContent="0 km/h";}
 function startRace(){resetKart();running=true;finished=false;paused=false;startTime=performance.now();lapStart=0;$("#overlay").hidden=true;$("#pause").textContent="Ⅱ Pause";canvas.focus();}
 function stopRace(title,copy,button="Race again"){running=false;paused=false;$("#overlay-title").textContent=title;$("#overlay-copy").textContent=copy;$("#start").textContent=button;$("#overlay").hidden=false;}
-function pauseRace(){if(!running||finished)return;paused=!paused;if(paused){running=false;stopRace("Race paused","Take a breather. Your current lap is saved only when completed.","Resume racing");}else{running=true;startTime=performance.now()-raceElapsed;$("#overlay").hidden=true;}$("#pause").textContent=paused?"▶ Resume":"Ⅱ Pause";}
+function pauseRace(){if(!running||finished)return;paused=true;running=false;$("#overlay-title").textContent="Race paused";$("#overlay-copy").textContent="Take a breather. Your current lap will continue when you resume.";$("#start").textContent="Resume racing";$("#overlay").hidden=false;$("#pause").textContent="▶ Resume";}
 function updateKart(dt){
   const accelerating=keys.has("ArrowUp")||keys.has("KeyW"),braking=keys.has("ArrowDown")||keys.has("KeyS"),left=keys.has("ArrowLeft")||keys.has("KeyA"),right=keys.has("ArrowRight")||keys.has("KeyD"),hand=keys.has("Space");
   if(accelerating)speed+=27*dt;else speed-=11*dt;
