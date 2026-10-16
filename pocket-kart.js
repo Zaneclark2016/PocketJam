@@ -7,7 +7,7 @@ const BEST_KEY = "pocketjam.kart.best.v1";
 const GHOST_KEY = "pocketjam.kart.ghost.v1";
 const TOTAL_LAPS = 3;
 const TRACK = { road: 13 };
-let trackCurve, trackSamples = [], boostPads = [], lastBoostAt = 0, driftAngle = 0, driftFx = [], driftFxClock = 0;
+let trackCurve, trackSamples = [], boostPads = [], trees = [], lastBoostAt = 0, driftAngle = 0, driftFx = [], driftFxClock = 0;
 let renderer, scene, camera, kart, wheels = [], ghostKart, ghostWheels = [];
 let clock = new THREE.Clock();
 let running = false, finished = false, paused = false, startTime = 0, raceElapsed = 0, lapStart = 0;
@@ -44,7 +44,13 @@ function makeTrack(){
  for(let i=0;i<N;i+=3){const p=trackCurve.getPointAt(i/N),t=trackCurve.getTangentAt(i/N).setY(0).normalize(),side=new THREE.Vector3(t.z,0,-t.x);for(const sign of [-1,1]){const c=new THREE.Mesh(new THREE.BoxGeometry(1.05,.16,.85),mat(i%2?0xf7f0df:0xf46d57));c.position.copy(p).addScaledVector(side,sign*(TRACK.road/2-.35));c.position.y=.12;c.rotation.y=Math.atan2(t.x,t.z);scene.add(c);}}
  const start=trackCurve.getPointAt(0),tan=trackCurve.getTangentAt(0).setY(0).normalize();for(let i=0;i<12;i++){const q=new THREE.Mesh(new THREE.BoxGeometry(1.05,.04,1.5),mat(i%2?0xffffff:0x263331));q.position.copy(start).add(new THREE.Vector3(tan.z,0,-tan.x).multiplyScalar(-TRACK.road/2+(i+.5)*TRACK.road/12));q.position.y=.12;q.rotation.y=Math.atan2(tan.x,tan.z);scene.add(q);}
  boostPads=[];for(const u of [.13,.39,.67,.87]){const p=trackCurve.getPointAt(u),t=trackCurve.getTangentAt(u).setY(0).normalize(),pad=new THREE.Group();pad.position.copy(p);pad.position.y=.13;pad.rotation.y=Math.atan2(t.x,t.z);pad.add(new THREE.Mesh(new THREE.BoxGeometry(5,.12,3.2),mat(0x13cfe8)));for(let j=-1;j<=1;j++){const ar=new THREE.Mesh(new THREE.ConeGeometry(.65,.95,3),mat(0xeaffff));ar.rotation.x=Math.PI/2;ar.position.set(j*1.35,.12,-.15);pad.add(ar);}scene.add(pad);boostPads.push({position:p.clone(),mesh:pad});}
- for(let i=0;i<100;i++){const p=trackCurve.getPointAt(i/100),t=trackCurve.getTangentAt(i/100).setY(0).normalize(),side=new THREE.Vector3(t.z,0,-t.x),q=p.clone().addScaledVector(side,(TRACK.road/2+11+Math.random()*13)*(i%2?1:-1)),tree=new THREE.Group();tree.position.set(q.x,0,q.z);const tr=new THREE.Mesh(new THREE.CylinderGeometry(.18,.26,1.5,5),mat(0x8d603a));tr.position.y=.75;tree.add(tr);const crown=new THREE.Mesh(new THREE.ConeGeometry(1.2,2.7,6),mat([0x3b985b,0x4eaa60,0x6dbd63][i%3]));crown.position.y=2.45;tree.add(crown);scene.add(tree);}
+ trees=[];
+ for(let i=0;i<100;i++){
+   const u=(i+Math.random()*.6)/100,p=trackCurve.getPointAt(u),t=trackCurve.getTangentAt(u).setY(0).normalize(),side=new THREE.Vector3(t.z,0,-t.x);
+   const offset=TRACK.road/2+12+Math.random()*13,q=p.clone().addScaledVector(side,offset*(i%2?1:-1)),tree=new THREE.Group();tree.position.set(q.x,0,q.z);
+   const tr=new THREE.Mesh(new THREE.CylinderGeometry(.32,.42,1.8,6),mat(0x8d603a));tr.position.y=.9;tree.add(tr);
+   const crown=new THREE.Mesh(new THREE.ConeGeometry(1.45,3.1,6),mat([0x3b985b,0x4eaa60,0x6dbd63][i%3]));crown.position.y=2.65;tree.add(crown);scene.add(tree);trees.push({mesh:tree,position:new THREE.Vector3(q.x,0,q.z),radius:1.55});
+ }
  for(let i=0;i<90;i++){const f=new THREE.Mesh(new THREE.SphereGeometry(.22,6,5),mat([0xffd45c,0xff8fc1,0xffffff][i%3]));f.position.set((Math.random()-.5)*240,.2,(Math.random()-.5)*190);scene.add(f);}
  for(const sign of [-1,1]){const p=start.clone().add(new THREE.Vector3(tan.z,0,-tan.x).multiplyScalar(sign*8)),post=new THREE.Mesh(new THREE.BoxGeometry(.35,4,.35),mat(0xfaf4dc));post.position.set(p.x,2,p.z);scene.add(post);}const banner=new THREE.Mesh(new THREE.BoxGeometry(16,.8,.35),mat(0xffdc58));banner.position.set(start.x,3.8,start.z);banner.rotation.y=Math.atan2(tan.x,tan.z);scene.add(banner);
 }
@@ -119,7 +125,18 @@ function updateKart(dt){
   const movementHeading=heading+driftAngle;
   const forward=new THREE.Vector3(Math.sin(movementHeading),0,Math.cos(movementHeading));
   kart.position.addScaledVector(forward,speed*dt);
-  const nearest=nearestTrack(kart.position.x,kart.position.z);if(nearest.distance>TRACK.road*.62){speed*=Math.pow(.985,dt*60);}
+  const nearest=nearestTrack(kart.position.x,kart.position.z);
+  // Off-road speed is capped at 90 km/h (the HUD converts internal speed by 4.2).
+  if(nearest.distance>TRACK.road/2+0.8){speed=clamp(speed,-9,90/4.2);}
+  // Trees are kept clear of the tarmac and block the kart if it reaches their trunks/crowns.
+  for(const tree of trees){
+    const dx=kart.position.x-tree.position.x,dz=kart.position.z-tree.position.z,dist=Math.hypot(dx,dz),minDist=tree.radius+0.8;
+    if(dist<minDist){
+      if(dist<0.001){kart.position.x+=minDist;}
+      else {const push=(minDist-dist)/dist;kart.position.x+=dx*push;kart.position.z+=dz*push;}
+      speed*=0.45;
+    }
+  }
   const now=performance.now();for(const pad of boostPads){if(kart.position.distanceTo(pad.position)<4&&now-lastBoostAt>1100){speed=clamp(speed+13,0,46);lastBoostAt=now;pad.mesh.scale.set(1.2,1.2,1.2);setTimeout(()=>pad.mesh.scale.set(1,1,1),180);break;}}
   kart.position.y=0;kart.rotation.y=heading+driftAngle*.55;
   wheels.forEach(w=>w.rotation.x+=speed*dt*1.6);
