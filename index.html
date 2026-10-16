@@ -21,6 +21,20 @@
   </style>
 </head>
 <body>
+  <div class="genre-edge" id="genre-edge" aria-hidden="true"></div>
+  <aside class="genre-drawer" id="genre-drawer" aria-label="Browse game genres">
+    <button class="genre-drawer-toggle" id="genre-drawer-toggle" aria-expanded="false" aria-controls="genre-drawer-panel" aria-label="Open game genres">🎮 <span>GENRES</span> <b>›</b></button>
+    <div class="genre-drawer-panel" id="genre-drawer-panel">
+      <div class="genre-drawer-heading"><span class="eyebrow">FIND YOUR GAME</span><h2>Browse genres</h2><p>Pick your kind of fun.</p></div>
+      <button class="genre-option active" data-genre="all"><span>🎮</span><span><strong>All games</strong><small>Everything in the arcade</small></span><b>→</b></button>
+      <button class="genre-option" data-genre="clicker"><span>👆</span><span><strong>Clicker</strong><small>Tap, collect, upgrade</small></span><b>→</b></button>
+      <button class="genre-option" data-genre="infinite"><span>🏃</span><span><strong>Infinite</strong><small>Keep going for a high score</small></span><b>→</b></button>
+      <button class="genre-option" data-genre="arcade"><span>🕹️</span><span><strong>Arcade</strong><small>Quick classic challenges</small></span><b>→</b></button>
+      <button class="genre-option" data-genre="puzzle"><span>🧩</span><span><strong>Puzzle</strong><small>Think it through</small></span><b>→</b></button>
+      <button class="genre-option" data-genre="racing"><span>🏎️</span><span><strong>Racing</strong><small>Coming soon</small></span><b>→</b></button>
+      <p class="genre-drawer-foot">More genres as the arcade grows ✨</p>
+    </div>
+  </aside>
   <div class="site-shell">
     <header class="topbar">
       <a class="brand" href="#home" aria-label="PocketJam home">
@@ -69,6 +83,7 @@
       <section id="page-games" class="page">
         <div class="page-heading"><span class="eyebrow">THE WHOLE COLLECTION</span><h1>All games</h1><p>Quick to start. Hard to put down.</p></div>
         <div id="all-game-grid" class="game-grid"></div>
+        <p id="genre-empty-state" class="empty-state" hidden></p>
       </section>
 
       <section id="page-favorites" class="page">
