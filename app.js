@@ -152,7 +152,7 @@
       empty.hidden = genreGames.length > 0;
       empty.textContent = activeGenre === "racing" ? "🏎️ Racing games are coming soon! Check back when we add a need-for-speed corner to the arcade." : "No games in this genre yet. Try another genre!";
     }
-    $(".genre-option").forEach(button => button.classList.toggle("active", button.dataset.genre === activeGenre));
+    $$(".genre-option").forEach(button => button.classList.toggle("active", button.dataset.genre === activeGenre));
     renderCards("#favorite-game-grid", gameInfo.filter(g => state.favorites.includes(g.id)));
     $("#favorite-count").textContent = state.favorites.length;
     $("#empty-favorites").hidden = state.favorites.length > 0;
