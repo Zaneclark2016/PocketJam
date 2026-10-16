@@ -7,7 +7,7 @@ const BEST_KEY = "pocketjam.kart.best.v1";
 const GHOST_KEY = "pocketjam.kart.ghost.v1";
 const TOTAL_LAPS = 3;
 const TRACK = { road: 13 };
-let trackCurve, trackSamples = [], boostPads = [], lastBoostAt = 0;
+let trackCurve, trackSamples = [], boostPads = [], lastBoostAt = 0, driftAngle = 0;
 let renderer, scene, camera, kart, wheels = [], ghostKart, ghostWheels = [];
 let clock = new THREE.Clock();
 let running = false, finished = false, paused = false, startTime = 0, raceElapsed = 0, lapStart = 0;
@@ -71,18 +71,21 @@ function updateKart(dt){
   const accelerating=keys.has("ArrowUp")||keys.has("KeyW"),braking=keys.has("ArrowDown")||keys.has("KeyS"),left=keys.has("ArrowLeft")||keys.has("KeyA"),right=keys.has("ArrowRight")||keys.has("KeyD"),hand=keys.has("Space");
   if(accelerating)speed+=27*dt;else speed-=11*dt;
   if(braking)speed-=34*dt;
-  if(hand)speed*=Math.pow(.965,dt*60);
+  if(hand)speed*=Math.pow(.982,dt*60);
   speed=clamp(speed,-9,38);
   const target=(right?1:0)-(left?1:0);steer+=(target-steer)*Math.min(1,dt*7);
   // Arcade-style steering: responsive even at low speed so recovery from grass is quick.
-  const grip=hand?1.35:1;
+  const drifting=hand&&Math.abs(speed)>8;
   const steerSpeed=0.58+Math.min(Math.abs(speed),30)*0.032;
-  heading-=steer*steerSpeed*dt*grip*Math.sign(speed||1);
-  const forward=new THREE.Vector3(Math.sin(heading),0,Math.cos(heading));
+  heading-=steer*steerSpeed*dt*(drifting?1.75:1)*Math.sign(speed||1);
+  const targetDrift=drifting?-steer*0.48*Math.sign(speed||1):0;
+  driftAngle=THREE.MathUtils.damp(driftAngle,targetDrift,drifting?3.2:7,dt);
+  const movementHeading=heading+driftAngle;
+  const forward=new THREE.Vector3(Math.sin(movementHeading),0,Math.cos(movementHeading));
   kart.position.addScaledVector(forward,speed*dt);
   const nearest=nearestTrack(kart.position.x,kart.position.z);if(nearest.distance>TRACK.road*.62){speed*=Math.pow(.985,dt*60);}
   const now=performance.now();for(const pad of boostPads){if(kart.position.distanceTo(pad.position)<4&&now-lastBoostAt>1100){speed=clamp(speed+13,0,46);lastBoostAt=now;pad.mesh.scale.set(1.2,1.2,1.2);setTimeout(()=>pad.mesh.scale.set(1,1,1),180);break;}}
-  kart.position.y=0;kart.rotation.y=heading;
+  kart.position.y=0;kart.rotation.y=heading+driftAngle*.55;
   wheels.forEach(w=>w.rotation.x+=speed*dt*1.6);
   // Smooth chase camera with a little height and distance for visibility.
   const behind=new THREE.Vector3(-Math.sin(heading)*10,6.1,-Math.cos(heading)*10);
