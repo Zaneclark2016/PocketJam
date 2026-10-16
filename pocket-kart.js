@@ -45,11 +45,30 @@ function makeTrack(){
  const start=trackCurve.getPointAt(0),tan=trackCurve.getTangentAt(0).setY(0).normalize();for(let i=0;i<12;i++){const q=new THREE.Mesh(new THREE.BoxGeometry(1.05,.04,1.5),mat(i%2?0xffffff:0x263331));q.position.copy(start).add(new THREE.Vector3(tan.z,0,-tan.x).multiplyScalar(-TRACK.road/2+(i+.5)*TRACK.road/12));q.position.y=.12;q.rotation.y=Math.atan2(tan.x,tan.z);scene.add(q);}
  boostPads=[];for(const u of [.13,.39,.67,.87]){const p=trackCurve.getPointAt(u),t=trackCurve.getTangentAt(u).setY(0).normalize(),pad=new THREE.Group();pad.position.copy(p);pad.position.y=.13;pad.rotation.y=Math.atan2(t.x,t.z);pad.add(new THREE.Mesh(new THREE.BoxGeometry(5,.12,3.2),mat(0x13cfe8)));for(let j=-1;j<=1;j++){const ar=new THREE.Mesh(new THREE.ConeGeometry(.65,.95,3),mat(0xeaffff));ar.rotation.x=Math.PI/2;ar.position.set(j*1.35,.12,-.15);pad.add(ar);}scene.add(pad);boostPads.push({position:p.clone(),mesh:pad});}
  trees=[];
+ // Place trees only after checking their distance from the full sampled road centerline.
+ // This avoids trees cutting onto the tarmac at tight bends where a simple side offset fails.
+ const roadClearance=TRACK.road/2+3.2;
+ const treeCandidates=[];
  for(let i=0;i<100;i++){
    const u=(i+Math.random()*.6)/100,p=trackCurve.getPointAt(u),t=trackCurve.getTangentAt(u).setY(0).normalize(),side=new THREE.Vector3(t.z,0,-t.x);
-   const offset=TRACK.road/2+12+Math.random()*13,q=p.clone().addScaledVector(side,offset*(i%2?1:-1)),tree=new THREE.Group();tree.position.set(q.x,0,q.z);
+   const sign=i%2?1:-1;
+   const offset=TRACK.road/2+16+Math.random()*20;
+   const q=p.clone().addScaledVector(side,offset*sign);
+   treeCandidates.push(q);
+ }
+ // Repeatedly sample the entire loop so each candidate is validated against nearby and distant track sections.
+ for(const q of treeCandidates){
+   let nearestSq=Infinity;
+   for(const p of trackSamples){
+     const dx=p.x-q.x,dz=p.z-q.z,d=dx*dx+dz*dz;
+     if(d<nearestSq)nearestSq=d;
+   }
+   if(nearestSq<roadClearance*roadClearance)continue;
+   // Keep trees separated from each other too.
+   if(trees.some(tree=>tree.position.distanceTo(q)<4.5))continue;
+   const tree=new THREE.Group();tree.position.set(q.x,0,q.z);
    const tr=new THREE.Mesh(new THREE.CylinderGeometry(.32,.42,1.8,6),mat(0x8d603a));tr.position.y=.9;tree.add(tr);
-   const crown=new THREE.Mesh(new THREE.ConeGeometry(1.45,3.1,6),mat([0x3b985b,0x4eaa60,0x6dbd63][i%3]));crown.position.y=2.65;tree.add(crown);scene.add(tree);trees.push({mesh:tree,position:new THREE.Vector3(q.x,0,q.z),radius:1.55});
+   const crown=new THREE.Mesh(new THREE.ConeGeometry(1.45,3.1,6),mat([0x3b985b,0x4eaa60,0x6dbd63][trees.length%3]));crown.position.y=2.65;tree.add(crown);scene.add(tree);trees.push({mesh:tree,position:new THREE.Vector3(q.x,0,q.z),radius:1.55});
  }
  for(let i=0;i<90;i++){const f=new THREE.Mesh(new THREE.SphereGeometry(.22,6,5),mat([0xffd45c,0xff8fc1,0xffffff][i%3]));f.position.set((Math.random()-.5)*240,.2,(Math.random()-.5)*190);scene.add(f);}
  for(const sign of [-1,1]){const p=start.clone().add(new THREE.Vector3(tan.z,0,-tan.x).multiplyScalar(sign*8)),post=new THREE.Mesh(new THREE.BoxGeometry(.35,4,.35),mat(0xfaf4dc));post.position.set(p.x,2,p.z);scene.add(post);}const banner=new THREE.Mesh(new THREE.BoxGeometry(16,.8,.35),mat(0xffdc58));banner.position.set(start.x,3.8,start.z);banner.rotation.y=Math.atan2(tan.x,tan.z);scene.add(banner);
