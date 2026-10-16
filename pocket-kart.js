@@ -80,11 +80,14 @@ function updateKart(dt){
   if(hand)speed*=Math.pow(.965,dt*60);
   speed=clamp(speed,-9,38);
   const target=(right?1:0)-(left?1:0);steer+=(target-steer)*Math.min(1,dt*7);
-  // Arcade-style steering: responsive even at low speed so recovery from grass is quick.\n  const grip=hand?1.35:1;const steerSpeed=0.9+Math.min(Math.abs(speed),30)*0.055;heading-=steer*steerSpeed*dt*grip*Math.sign(speed||1);
+  // Arcade-style steering: responsive even at low speed so recovery from grass is quick.
+  const grip=hand?1.35:1;
+  const steerSpeed=1.15+Math.min(Math.abs(speed),30)*0.075;
+  heading-=steer*steerSpeed*dt*grip*Math.sign(speed||1);
   const forward=new THREE.Vector3(Math.sin(heading),0,Math.cos(heading));
   kart.position.addScaledVector(forward,speed*dt);
   const onRoad=(kart.position.x*kart.position.x/(TRACK.a*TRACK.a)+kart.position.z*kart.position.z/(TRACK.b*TRACK.b));
-  if(onRoad>1.22){speed*=Math.pow(.92,dt*60);}
+  if(onRoad>1.20){speed*=Math.pow(.985,dt*60);}
   kart.position.y=0;kart.rotation.y=heading;
   wheels.forEach(w=>w.rotation.x+=speed*dt*1.6);
   // Smooth chase camera with a little height and distance for visibility.
