@@ -57,6 +57,12 @@ h1, h2, h3, p { margin-top: 0; }
 .card-art { height: 155px; display: grid; place-items: center; position: relative; overflow: hidden; }
 .card-art.cookie-art { background: #ffdf70; }.card-art.dino-art { background: #c7f0e4; }.card-art.bubble-art { background: #ffd7e8; }.card-art.flappy-art { background: #b9e8ff; }
 .card-illustration { font-size: 76px; filter: drop-shadow(0 7px 0 rgba(40,30,15,.08)); transform: rotate(-8deg); }
+.card-art.has-image { display: block; }
+.card-thumbnail { display: block; width: 100%; height: 100%; min-height: 155px; object-fit: cover; }
+.card-art.has-image .card-illustration { display: none; }
+.card-art.has-image .card-sticker { background: rgba(255,255,255,.88); }
+@media (max-width: 850px) { .card-thumbnail { min-height: 130px; } }
+@media (max-width: 620px) { .card-thumbnail { min-height: 145px; } }
 .card-sticker { position: absolute; top: 13px; left: 13px; background: rgba(255,255,255,.72); padding: 6px 9px; border-radius: 99px; font-size: 9px; font-weight: 900; letter-spacing: .8px; }
 .favorite-button { position: absolute; top: 11px; right: 11px; display: grid; place-items: center; border: 0; width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,.85); font-size: 19px; color: #8e8173; }
 .favorite-button.favorited { color: #e75e80; }
