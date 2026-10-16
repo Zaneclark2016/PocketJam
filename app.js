@@ -8,7 +8,7 @@
 
   const gameInfo = [
     { id: "cookie", title: "Cookie Baker", desc: "Bake a tiny cookie empire, one click at a time.", tag: "Incremental", art: "cookie-art", image: "assets/images/cookie-baker.svg", emoji: "🍪", label: "FEATURED", page: "cookie", playable: true },
-    { id: "dino", title: "Dino Dash", desc: "Jump, dodge, and see how far your little dino can run.", tag: "Endless runner", art: "dino-art", image: "assets/images/dino-dash.svg", emoji: "🦖", label: "QUICK REFLEXES", page: "dino", playable: true },
+    { id: "dino", title: "Dino Dash", desc: "Jump, dodge, and see how far your little dino can run.", tag: "Endless runner", art: "dino-art", image: "assets/images/dino-dash.png", emoji: "🦖", label: "QUICK REFLEXES", page: "dino", playable: true },
     { id: "bubble", title: "Bubble Pop", desc: "Pop your way to a new personal best in 30 seconds.", tag: "Score attack", art: "bubble-art", image: "assets/images/bubble-pop.svg", emoji: "🫧", label: "30-SECOND GAME", page: "bubble", playable: true },
     { id: "flappy", title: "Flappy Bird", desc: "Flap through the pipes and chase a high score.", tag: "Arcade classic", art: "flappy-art", image: "assets/images/flappy-bird.svg", emoji: "🐤", label: "NEW GAME", page: "flappy", playable: true },
     { id: "snake", title: "Snake", desc: "Eat apples, grow longer, and avoid your own tail.", tag: "Classic arcade", art: "snake-art", image: "assets/images/snake.svg", emoji: "🐍", label: "CLASSIC", page: "snake", playable: true }
