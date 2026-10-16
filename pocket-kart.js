@@ -7,7 +7,7 @@ const BEST_KEY = "pocketjam.kart.best.v1";
 const GHOST_KEY = "pocketjam.kart.ghost.v1";
 const TOTAL_LAPS = 3;
 const TRACK = { road: 13 };
-let trackCurve, trackSamples = [], boostPads = [], lastBoostAt = 0, driftAngle = 0;
+let trackCurve, trackSamples = [], boostPads = [], lastBoostAt = 0, driftAngle = 0, driftFx = [], driftFxClock = 0;
 let renderer, scene, camera, kart, wheels = [], ghostKart, ghostWheels = [];
 let clock = new THREE.Clock();
 let running = false, finished = false, paused = false, startTime = 0, raceElapsed = 0, lapStart = 0;
@@ -48,6 +48,41 @@ function makeTrack(){
  for(let i=0;i<90;i++){const f=new THREE.Mesh(new THREE.SphereGeometry(.22,6,5),mat([0xffd45c,0xff8fc1,0xffffff][i%3]));f.position.set((Math.random()-.5)*240,.2,(Math.random()-.5)*190);scene.add(f);}
  for(const sign of [-1,1]){const p=start.clone().add(new THREE.Vector3(tan.z,0,-tan.x).multiplyScalar(sign*8)),post=new THREE.Mesh(new THREE.BoxGeometry(.35,4,.35),mat(0xfaf4dc));post.position.set(p.x,2,p.z);scene.add(post);}const banner=new THREE.Mesh(new THREE.BoxGeometry(16,.8,.35),mat(0xffdc58));banner.position.set(start.x,3.8,start.z);banner.rotation.y=Math.atan2(tan.x,tan.z);scene.add(banner);
 }
+function spawnDriftFX(dt, drifting){
+  driftFxClock -= dt;
+  if (!drifting) return;
+  // Each rear tire gets its own stream of smoke puffs and tiny orange sparks.
+  if (driftFxClock <= 0) {
+    driftFxClock = 0.035;
+    const rear = new THREE.Vector3(0, 0.34, 1.13);
+    for (const side of [-1, 1]) {
+      const local = rear.clone(); local.x = side * 1.08;
+      const world = local.applyAxisAngle(UP, kart.rotation.y).add(kart.position);
+      const puffMat = new THREE.MeshBasicMaterial({color:0xdfe6e2, transparent:true, opacity:0.42, depthWrite:false});
+      const puff = new THREE.Mesh(new THREE.SphereGeometry(0.22 + Math.random()*0.12, 7, 6), puffMat);
+      puff.position.set(world.x, 0.22, world.z);
+      scene.add(puff);
+      driftFx.push({mesh:puff, type:"smoke", age:0, life:0.65 + Math.random()*0.35, vx:(Math.random()-.5)*1.5-speed*0.018, vz:(Math.random()-.5)*1.5-speed*0.018, vy:0.8+Math.random()*0.8});
+      for (let j=0; j<2; j++) {
+        const spark = new THREE.Mesh(new THREE.SphereGeometry(0.055, 5, 4), new THREE.MeshBasicMaterial({color:j%2?0xffd85b:0xff7a32}));
+        spark.position.set(world.x, 0.16, world.z);
+        scene.add(spark);
+        driftFx.push({mesh:spark, type:"spark", age:0, life:0.18+Math.random()*0.18, vx:(Math.random()-.5)*5-speed*0.04, vz:(Math.random()-.5)*5-speed*0.04, vy:0.7+Math.random()*2.1});
+      }
+    }
+  }
+}
+function updateDriftFX(dt){
+  for (let i=driftFx.length-1; i>=0; i--) {
+    const p=driftFx[i]; p.age+=dt;
+    if(p.age>=p.life){scene.remove(p.mesh);p.mesh.geometry.dispose();p.mesh.material.dispose();driftFx.splice(i,1);continue;}
+    p.mesh.position.x+=p.vx*dt; p.mesh.position.z+=p.vz*dt; p.mesh.position.y+=p.vy*dt;
+    if(p.type==="smoke"){
+      const k=p.age/p.life; p.mesh.scale.setScalar(1+k*2.8); p.mesh.material.opacity=0.42*(1-k);
+    } else {p.vy-=7*dt; p.mesh.scale.setScalar(1-p.age/p.life);}
+  }
+}
+function clearDriftFX(){for(const p of driftFx){scene.remove(p.mesh);p.mesh.geometry.dispose();p.mesh.material.dispose();}driftFx=[];driftFxClock=0;}
 function setup(){
   renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false});renderer.setPixelRatio(Math.min(devicePixelRatio,1.8));renderer.setSize(stage.clientWidth,stage.clientHeight,false);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   renderer.outputColorSpace=THREE.SRGBColorSpace;
@@ -63,7 +98,7 @@ function resize(){if(!renderer)return;const w=stage.clientWidth,h=stage.clientHe
 function trackPose(t,offset=0){const u=((t%1)+1)%1,p=trackCurve.getPointAt(u),tan=trackCurve.getTangentAt(u).setY(0).normalize(),side=new THREE.Vector3(tan.z,0,-tan.x);p.addScaledVector(side,offset);return {x:p.x,z:p.z,yaw:Math.atan2(tan.x,tan.z)};}
 function nearestTrack(x,z){let best=Infinity,progress=0;for(let i=0;i<trackSamples.length;i++){const p=trackSamples[i],d=(p.x-x)**2+(p.z-z)**2;if(d<best){best=d;progress=i/(trackSamples.length-1);}}return {distance:Math.sqrt(best),progress};}
 function progressOf(x,z){return nearestTrack(x,z).progress;}
-function resetKart(){const p=trackPose(0,-1.5);kart.position.set(p.x,0,p.z);heading=p.yaw;kart.rotation.y=heading;speed=0;steer=0;distance=0;prevProgress=0;lastLapProgress=0;lap=1;raceElapsed=0;lapStart=0;lapSamples=[];ghostElapsed=0;ghostSamples=JSON.parse(localStorage.getItem(GHOST_KEY)||"[]");ghostKart.visible=ghostSamples.length>1;$("#lap").textContent="1 / "+TOTAL_LAPS;$("#race-time").textContent=fmt(0);$("#speed").textContent="0 km/h";}
+function resetKart(){clearDriftFX();driftAngle=0;const p=trackPose(0,-1.5);kart.position.set(p.x,0,p.z);heading=p.yaw;kart.rotation.y=heading;speed=0;steer=0;distance=0;prevProgress=0;lastLapProgress=0;lap=1;raceElapsed=0;lapStart=0;lapSamples=[];ghostElapsed=0;ghostSamples=JSON.parse(localStorage.getItem(GHOST_KEY)||"[]");ghostKart.visible=ghostSamples.length>1;$("#lap").textContent="1 / "+TOTAL_LAPS;$("#race-time").textContent=fmt(0);$("#speed").textContent="0 km/h";}
 function startRace(){resetKart();running=true;finished=false;paused=false;startTime=performance.now();lapStart=0;$("#overlay").hidden=true;$("#pause").textContent="Ⅱ Pause";canvas.focus();}
 function stopRace(title,copy,button="Race again"){running=false;paused=false;$("#overlay-title").textContent=title;$("#overlay-copy").textContent=copy;$("#start").textContent=button;$("#overlay").hidden=false;}
 function pauseRace(){if(!running||finished)return;paused=true;running=false;$("#overlay-title").textContent="Race paused";$("#overlay-copy").textContent="Take a breather. Your current lap will continue when you resume.";$("#start").textContent="Resume racing";$("#overlay").hidden=false;$("#pause").textContent="▶ Resume";}
@@ -87,6 +122,7 @@ function updateKart(dt){
   const now=performance.now();for(const pad of boostPads){if(kart.position.distanceTo(pad.position)<4&&now-lastBoostAt>1100){speed=clamp(speed+13,0,46);lastBoostAt=now;pad.mesh.scale.set(1.2,1.2,1.2);setTimeout(()=>pad.mesh.scale.set(1,1,1),180);break;}}
   kart.position.y=0;kart.rotation.y=heading+driftAngle*.55;
   wheels.forEach(w=>w.rotation.x+=speed*dt*1.6);
+  spawnDriftFX(dt,drifting);
   // Smooth chase camera with a little height and distance for visibility.
   const behind=new THREE.Vector3(-Math.sin(heading)*10,6.1,-Math.cos(heading)*10);
   const desired=kart.position.clone().add(behind);camera.position.lerp(desired,Math.min(1,dt*4.5));camera.lookAt(kart.position.x,kart.position.y+1.1,kart.position.z);
@@ -111,7 +147,7 @@ function updateKart(dt){
   $("#speed").textContent=Math.round(Math.abs(speed)*4.2)+" km/h";
 }
 function updateGhost(dt){if(!ghostSamples||ghostSamples.length<2||!ghostKart.visible)return;ghostElapsed+=dt*1000;let i=ghostSamples.findIndex(p=>p.t>=ghostElapsed);if(i<0){ghostElapsed=0;i=0;}const a=ghostSamples[Math.max(0,i-1)],b=ghostSamples[i];if(!a||!b)return;const f=b.t===a.t?0:(ghostElapsed-a.t)/(b.t-a.t);ghostKart.position.set(THREE.MathUtils.lerp(a.x,b.x,f),.04,THREE.MathUtils.lerp(a.z,b.z,f));ghostKart.rotation.y=THREE.MathUtils.lerp(a.rot,b.rot,f);}
-function animate(){requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.04);if(running){raceElapsed=performance.now()-startTime;updateKart(dt);updateGhost(dt);$("#race-time").textContent=fmt(raceElapsed);}renderer.render(scene,camera);}
+function animate(){requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.04);updateDriftFX(dt);if(running){raceElapsed=performance.now()-startTime;updateKart(dt);updateGhost(dt);$("#race-time").textContent=fmt(raceElapsed);}renderer.render(scene,camera);}
 $("#start").addEventListener("click",()=>{if(paused){paused=false;running=true;startTime=performance.now()-raceElapsed;$("#overlay").hidden=true;$("#pause").textContent="Ⅱ Pause";}else startRace();});
 $("#pause").addEventListener("click",()=>{if(paused){paused=false;running=true;startTime=performance.now()-raceElapsed;$("#overlay").hidden=true;$("#pause").textContent="Ⅱ Pause";}else pauseRace();});
 $("#restart").addEventListener("click",()=>stopRace("Ready to race?","Start a fresh three-lap run around Sunny Meadow.","Start your engine"));
